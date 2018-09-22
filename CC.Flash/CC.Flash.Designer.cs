@@ -46,10 +46,12 @@
             this.cbVerifyAfterWrite = new System.Windows.Forms.CheckBox();
             this.cbAutoConnect = new System.Windows.Forms.CheckBox();
             this.groupAllControls = new System.Windows.Forms.GroupBox();
+            this.btnResume = new System.Windows.Forms.Button();
             this.btnFlashRST = new System.Windows.Forms.Button();
             this.btnFlashDC = new System.Windows.Forms.Button();
             this.btnFlashDD = new System.Windows.Forms.Button();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.btnChipErase = new System.Windows.Forms.Button();
             this.filename = new System.Windows.Forms.TextBox();
             this.endAddress = new System.Windows.Forms.TextBox();
             this.label10 = new System.Windows.Forms.Label();
@@ -103,7 +105,7 @@
             this.openFile = new System.Windows.Forms.OpenFileDialog();
             this.error = new System.Windows.Forms.ErrorProvider(this.components);
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.btnChipErase = new System.Windows.Forms.Button();
+            this.cbResumeAfterWrite = new System.Windows.Forms.CheckBox();
             this.status.SuspendLayout();
             this.groupAllControls.SuspendLayout();
             this.groupBox4.SuspendLayout();
@@ -136,7 +138,7 @@
             this.status.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.progressBar,
             this.statusLine});
-            this.status.Location = new System.Drawing.Point(0, 537);
+            this.status.Location = new System.Drawing.Point(0, 557);
             this.status.Name = "status";
             this.status.Size = new System.Drawing.Size(413, 26);
             this.status.TabIndex = 2;
@@ -212,7 +214,7 @@
             // btnWrite
             // 
             this.btnWrite.Enabled = false;
-            this.btnWrite.Location = new System.Drawing.Point(105, 95);
+            this.btnWrite.Location = new System.Drawing.Point(106, 117);
             this.btnWrite.Name = "btnWrite";
             this.btnWrite.Size = new System.Drawing.Size(84, 23);
             this.btnWrite.TabIndex = 10;
@@ -223,7 +225,7 @@
             // btnRead
             // 
             this.btnRead.Enabled = false;
-            this.btnRead.Location = new System.Drawing.Point(206, 95);
+            this.btnRead.Location = new System.Drawing.Point(207, 117);
             this.btnRead.Name = "btnRead";
             this.btnRead.Size = new System.Drawing.Size(84, 23);
             this.btnRead.TabIndex = 11;
@@ -234,7 +236,7 @@
             // btnVerify
             // 
             this.btnVerify.Enabled = false;
-            this.btnVerify.Location = new System.Drawing.Point(307, 95);
+            this.btnVerify.Location = new System.Drawing.Point(308, 117);
             this.btnVerify.Name = "btnVerify";
             this.btnVerify.Size = new System.Drawing.Size(84, 23);
             this.btnVerify.TabIndex = 12;
@@ -270,6 +272,7 @@
             this.groupAllControls.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupAllControls.Controls.Add(this.btnResume);
             this.groupAllControls.Controls.Add(this.btnFlashRST);
             this.groupAllControls.Controls.Add(this.btnFlashDC);
             this.groupAllControls.Controls.Add(this.btnFlashDD);
@@ -291,9 +294,19 @@
             this.groupAllControls.Enabled = false;
             this.groupAllControls.Location = new System.Drawing.Point(0, 32);
             this.groupAllControls.Name = "groupAllControls";
-            this.groupAllControls.Size = new System.Drawing.Size(413, 510);
+            this.groupAllControls.Size = new System.Drawing.Size(413, 530);
             this.groupAllControls.TabIndex = 15;
             this.groupAllControls.TabStop = false;
+            // 
+            // btnResume
+            // 
+            this.btnResume.Location = new System.Drawing.Point(202, 377);
+            this.btnResume.Name = "btnResume";
+            this.btnResume.Size = new System.Drawing.Size(100, 23);
+            this.btnResume.TabIndex = 72;
+            this.btnResume.Text = "Resume";
+            this.btnResume.UseVisualStyleBackColor = true;
+            this.btnResume.Click += new System.EventHandler(this.btnResume_Click);
             // 
             // btnFlashRST
             // 
@@ -332,6 +345,7 @@
             // 
             this.groupBox4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox4.Controls.Add(this.cbResumeAfterWrite);
             this.groupBox4.Controls.Add(this.btnChipErase);
             this.groupBox4.Controls.Add(this.filename);
             this.groupBox4.Controls.Add(this.btnRead);
@@ -346,10 +360,20 @@
             this.groupBox4.Controls.Add(this.cbErasePage);
             this.groupBox4.Location = new System.Drawing.Point(7, 185);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(398, 126);
+            this.groupBox4.Size = new System.Drawing.Size(398, 146);
             this.groupBox4.TabIndex = 68;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "READ / WRITE";
+            // 
+            // btnChipErase
+            // 
+            this.btnChipErase.Location = new System.Drawing.Point(5, 117);
+            this.btnChipErase.Name = "btnChipErase";
+            this.btnChipErase.Size = new System.Drawing.Size(84, 23);
+            this.btnChipErase.TabIndex = 56;
+            this.btnChipErase.Text = "Chip Erase";
+            this.btnChipErase.UseVisualStyleBackColor = true;
+            this.btnChipErase.Click += new System.EventHandler(this.btnChipErase_Click);
             // 
             // filename
             // 
@@ -540,8 +564,7 @@
             // 
             // groupBox2
             // 
-            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox2.Controls.Add(this.label13);
             this.groupBox2.Controls.Add(this.label_TIMERS_OFF);
@@ -551,7 +574,7 @@
             this.groupBox2.Controls.Add(this.label12);
             this.groupBox2.Controls.Add(this.label8);
             this.groupBox2.Controls.Add(this.label_SEL_FLASH_INFO);
-            this.groupBox2.Location = new System.Drawing.Point(202, 397);
+            this.groupBox2.Location = new System.Drawing.Point(202, 417);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(203, 103);
             this.groupBox2.TabIndex = 52;
@@ -637,7 +660,7 @@
             // btnGetStatus
             // 
             this.btnGetStatus.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnGetStatus.Location = new System.Drawing.Point(202, 328);
+            this.btnGetStatus.Location = new System.Drawing.Point(202, 348);
             this.btnGetStatus.Name = "btnGetStatus";
             this.btnGetStatus.Size = new System.Drawing.Size(100, 23);
             this.btnGetStatus.TabIndex = 13;
@@ -648,7 +671,7 @@
             // btnExit
             // 
             this.btnExit.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnExit.Location = new System.Drawing.Point(305, 328);
+            this.btnExit.Location = new System.Drawing.Point(305, 348);
             this.btnExit.Name = "btnExit";
             this.btnExit.Size = new System.Drawing.Size(100, 23);
             this.btnExit.TabIndex = 40;
@@ -686,8 +709,6 @@
             // 
             // groupBox1
             // 
-            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
             this.groupBox1.Controls.Add(this.label3);
             this.groupBox1.Controls.Add(this.status_CHIP_ERASE_DONE);
             this.groupBox1.Controls.Add(this.status_PCON_IDLE);
@@ -704,7 +725,7 @@
             this.groupBox1.Controls.Add(this.label25);
             this.groupBox1.Controls.Add(this.status_STACK_OVERFLOW);
             this.groupBox1.Controls.Add(this.label6);
-            this.groupBox1.Location = new System.Drawing.Point(7, 317);
+            this.groupBox1.Location = new System.Drawing.Point(7, 337);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(189, 182);
             this.groupBox1.TabIndex = 51;
@@ -872,22 +893,24 @@
             // 
             this.error.ContainerControl = this;
             // 
-            // btnChipErase
+            // cbResumeAfterWrite
             // 
-            this.btnChipErase.Location = new System.Drawing.Point(4, 95);
-            this.btnChipErase.Name = "btnChipErase";
-            this.btnChipErase.Size = new System.Drawing.Size(84, 23);
-            this.btnChipErase.TabIndex = 56;
-            this.btnChipErase.Text = "Chip Erase";
-            this.btnChipErase.UseVisualStyleBackColor = true;
-            this.btnChipErase.Click += new System.EventHandler(this.btnChipErase_Click);
+            this.cbResumeAfterWrite.AutoSize = true;
+            this.cbResumeAfterWrite.Checked = true;
+            this.cbResumeAfterWrite.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbResumeAfterWrite.Location = new System.Drawing.Point(256, 94);
+            this.cbResumeAfterWrite.Name = "cbResumeAfterWrite";
+            this.cbResumeAfterWrite.Size = new System.Drawing.Size(118, 17);
+            this.cbResumeAfterWrite.TabIndex = 57;
+            this.cbResumeAfterWrite.Text = "Resume After Write";
+            this.cbResumeAfterWrite.UseVisualStyleBackColor = true;
             // 
             // CCFlash
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnExit;
-            this.ClientSize = new System.Drawing.Size(413, 563);
+            this.ClientSize = new System.Drawing.Size(413, 583);
             this.Controls.Add(this.groupAllControls);
             this.Controls.Add(this.status);
             this.Controls.Add(this.serialPorts);
@@ -990,6 +1013,8 @@
 		private System.Windows.Forms.Button btnFlashDD;
 		private System.Windows.Forms.ToolTip toolTip;
         private System.Windows.Forms.Button btnChipErase;
+        private System.Windows.Forms.Button btnResume;
+        private System.Windows.Forms.CheckBox cbResumeAfterWrite;
     }
 }
 

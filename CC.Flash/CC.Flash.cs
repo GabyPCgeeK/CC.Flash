@@ -890,7 +890,7 @@ namespace CC.Flash
 			byte data;
 
 			bool valid = true;
-			valid = valid ? DEBUG_INSTR(0x75, 0xC7, (byte)(((bank << 4) | 0x01) & 0xFF)) : false;
+			valid = valid ? DEBUG_INSTR(0x75, 0xC7, (byte)(((bank << 4) | 0x01) & 0xFF)) : false; //MOV MEMCTR, #DATA
 			while(length > 0)
 			{
 				int sentBytes = length > PACKET_SIZE ? PACKET_SIZE : length;
@@ -1314,6 +1314,7 @@ namespace CC.Flash
 			if (File.Exists(filename.Text))
 			{
 				FileStream fs = null;
+                bool okToResume = false;
 				try
 				{
 					groupAllControls.Enabled = false;
@@ -1330,6 +1331,11 @@ namespace CC.Flash
 					}
 
 					valid = valid ? DEBUG_INIT(false) : false;
+                    byte status = 0xFF;
+                    valid = valid ? READ_STATUS(out status) : false;
+                    if (valid && ((status & DEBUG_LOCKED) == DEBUG_LOCKED))
+                        MessageBox.Show("Device is DEBUG_LOCKED\nMust run 'Chip Erase' to Access Flash.");
+                    valid = valid ? !((status & DEBUG_LOCKED) == DEBUG_LOCKED) : false;
 					valid = valid ? CLOCK_INIT() : false;
 
 					progressBar.Minimum = 0;
@@ -1378,6 +1384,8 @@ namespace CC.Flash
 						else
 							MessageBox.Show("File read not persistance");
 					}
+                    if (valid && cbResumeAfterWrite.Checked)
+                        okToResume = true;
 				}
 				catch (Exception ex)
 				{
@@ -1387,7 +1395,10 @@ namespace CC.Flash
 				{
 					if (fs != null)
 						fs.Close();
-					DEBUG_INIT(false);
+                    if (okToResume)
+                        RESUME();
+                    else
+                        DEBUG_INIT(false);
 					progressBar.Value = progressBar.Minimum;
 					groupAllControls.Enabled = true;
 				}
@@ -1415,7 +1426,12 @@ namespace CC.Flash
 				fs = new FileStream(filename.Text, FileMode.Create, FileAccess.Write, FileShare.Write, FLASH_PAGE_SIZE);
 				bool valid = true;
 				valid = valid ? DEBUG_INIT(false) : false;
-				valid = valid ? CLOCK_INIT() : false;
+                byte status = 0xFF;
+                valid = valid ? READ_STATUS(out status) : false;
+                if (valid && ((status & DEBUG_LOCKED) == DEBUG_LOCKED))
+                    MessageBox.Show("Device is DEBUG_LOCKED\nMust run 'Chip Erase' to Access Flash.");
+                valid = valid ? !((status & DEBUG_LOCKED) == DEBUG_LOCKED) : false;
+                valid = valid ? CLOCK_INIT() : false;
 
 				progressBar.Minimum = 0;
 
@@ -1493,11 +1509,16 @@ namespace CC.Flash
 
         private void btnChipErase_Click(object sender, EventArgs e)
         {
-            string response = sendCommand("XW110", "Sending CHIP_ERASE ...");
-            if (parseOK(response))
-            {
+            if (MASS_ERASE_FLASH())
                 MessageBox.Show("Chip Erased");
-            }
+            else
+                MessageBox.Show("Error Erasing Chip");
+        }
+
+        private void btnResume_Click(object sender, EventArgs e)
+        {
+            if (!RESUME())
+                MessageBox.Show("Error Resuming");
         }
     }
 }
