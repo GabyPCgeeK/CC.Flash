@@ -12,6 +12,7 @@ using CC.Flash.Properties;
 using System.IO;
 using System.Configuration;
 using Coshx.IntelHexParser;
+using System.Diagnostics;
 #endregion
 
 namespace CC.Flash
@@ -389,6 +390,7 @@ namespace CC.Flash
 			if (READ_STATUS(out status))
 			{
 				setStatusLabels(status);
+                btnResumeHalt.Text = (status & CPU_HALTED) == CPU_HALTED ? "Resume" : "Halt";
 				return true;
 			}
 			return false;
@@ -1229,13 +1231,13 @@ namespace CC.Flash
 				int times = 5;
 				while (--times > 0)
 				{
-					FLASHDD(false);
+					FLASHDD(true);
 					Thread.Sleep(2000);
 					FLASHDD(false);
 					Thread.Sleep(2000);
 				}
 				setDisconnected();
-				groupAllControls.Enabled = true;
+				groupAllControls.Enabled = false;
 			}
 		}
 		#endregion
@@ -1253,13 +1255,13 @@ namespace CC.Flash
 				int times = 5;
 				while (--times > 0)
 				{
-					FLASHDC(false);
+					FLASHDC(true);
 					Thread.Sleep(2000);
 					FLASHDC(false);
 					Thread.Sleep(2000);
 				}
 				setDisconnected();
-				groupAllControls.Enabled = true;
+				groupAllControls.Enabled = false;
 			}
 		}
 		#endregion
@@ -1277,13 +1279,13 @@ namespace CC.Flash
 				int times = 5;
 				while (--times > 0)
 				{
-					FLASHRST(false);
+					FLASHRST(true);
 					Thread.Sleep(2000);
 					FLASHRST(false);
 					Thread.Sleep(2000);
 				}
 				setDisconnected();
-				groupAllControls.Enabled = true;
+				groupAllControls.Enabled = false;
 			}
 		}
 		#endregion
@@ -1336,6 +1338,7 @@ namespace CC.Flash
 			if (File.Exists(filename.Text))
 			{
                 Stream fs = null;
+                Stopwatch time = null;
                 bool okToResume = false;
 				try
 				{
@@ -1380,7 +1383,8 @@ namespace CC.Flash
 					progressBar.Maximum = (int)(length / (long)FLASH_PAGE_SIZE) + 1;
 					progressBar.Value = progressBar.Minimum;
 
-					long pageAddress = 0;
+                    time = Stopwatch.StartNew();
+                    long pageAddress = 0;
 					while (valid && length > 0)
 					{
 						progressBar.Value++;
@@ -1439,7 +1443,9 @@ namespace CC.Flash
                         DEBUG_INIT(false);
 					progressBar.Value = progressBar.Minimum;
 					groupAllControls.Enabled = true;
-				}
+                    time.Stop();
+                    statusLine.Text = "Wrote Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
+                }
 			}
 			else
 				MessageBox.Show("File not exists");
@@ -1458,7 +1464,8 @@ namespace CC.Flash
 					return;
 			}
 			FileStream fs = null;
-			try
+            Stopwatch time = null;
+            try
 			{
 				groupAllControls.Enabled = false;
 				fs = new FileStream(filename.Text, FileMode.Create, FileAccess.Write, FileShare.Write, FLASH_PAGE_SIZE);
@@ -1476,9 +1483,10 @@ namespace CC.Flash
 				progressBar.Maximum = (int)(FLASH_SIZE / (long)FLASH_PAGE_SIZE);
 				progressBar.Value = progressBar.Minimum;
 
-				long pageAddress = 0;
+                time = Stopwatch.StartNew();
+                long pageAddress = 0;
 				byte[] buffer = null;
-				while (valid && pageAddress < FLASH_SIZE)
+                while (valid && pageAddress < FLASH_SIZE)
 				{
 					progressBar.Value++;
 					valid = valid ? READ_FLASH_PAGE(pageAddress, FLASH_PAGE_SIZE, out buffer) : false;
@@ -1498,7 +1506,9 @@ namespace CC.Flash
 				DEBUG_INIT(false);
 				progressBar.Value = progressBar.Minimum;
 				groupAllControls.Enabled = true;
-			}
+                time.Stop();
+                statusLine.Text = "Read Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
+            }
 		}
 		#endregion
 
@@ -1547,24 +1557,50 @@ namespace CC.Flash
 
         private void btnChipErase_Click(object sender, EventArgs e)
         {
-            if (MASS_ERASE_FLASH())
-                MessageBox.Show("Chip Erased");
+            if (MessageBox.Show("Are you sure?\nAll data in Flash will be lost.", "CHIP_ERASE", MessageBoxButtons.OKCancel) == DialogResult.OK)
+            {
+                if (MASS_ERASE_FLASH())
+                    statusLine.Text = "Chip Erased";
+                else
+                    statusLine.Text = "Error Erasing Chip";
+            }
+        }
+
+        private void btnResumeHalt_Click(object sender, EventArgs e)
+        {
+            READ_STATUS();
+            if (btnResumeHalt.Text == "Resume")
+            {
+                if (!RESUME())
+                    statusLine.Text = "Error Resuming";
+            }
             else
-                MessageBox.Show("Error Erasing Chip");
-        }
-
-        private void btnResume_Click(object sender, EventArgs e)
-        {
-            if (!RESUME())
-                MessageBox.Show("Error Resuming");
+            {
+                if (!HALT())
+                    statusLine.Text = "Error Halting";
+            }
             READ_STATUS();
         }
 
-        private void btnHalt_Click(object sender, EventArgs e)
+        private void btnReset_Click(object sender, EventArgs e)
         {
-            if (!HALT())
-                MessageBox.Show("Error Resuming");
-            READ_STATUS();
+            FLASHRST(true);
+            FLASHRST(false);
+            int chipsel = chipModel.SelectedIndex;
+            if (DEBUG_INIT(false) && GET_CHIP_ID())
+            {
+                chipModel.SelectedIndex = chipsel;
+                if (cbResumeAfterReset.Checked)
+                {
+                    RESUME();
+                    READ_STATUS();
+                }
+            }
+            else
+            {
+                setDisconnected();
+                groupAllControls.Enabled = false;
+            }
         }
     }
 }

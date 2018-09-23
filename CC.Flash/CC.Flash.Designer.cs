@@ -46,12 +46,15 @@
             this.cbVerifyAfterWrite = new System.Windows.Forms.CheckBox();
             this.cbAutoConnect = new System.Windows.Forms.CheckBox();
             this.groupAllControls = new System.Windows.Forms.GroupBox();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.btnReset = new System.Windows.Forms.Button();
+            this.btnResumeHalt = new System.Windows.Forms.Button();
+            this.btnChipErase = new System.Windows.Forms.Button();
             this.btnFlashRST = new System.Windows.Forms.Button();
             this.btnFlashDC = new System.Windows.Forms.Button();
             this.btnFlashDD = new System.Windows.Forms.Button();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.cbResumeAfterWrite = new System.Windows.Forms.CheckBox();
-            this.btnChipErase = new System.Windows.Forms.Button();
             this.filename = new System.Windows.Forms.TextBox();
             this.endAddress = new System.Windows.Forms.TextBox();
             this.label10 = new System.Windows.Forms.Label();
@@ -105,10 +108,10 @@
             this.openFile = new System.Windows.Forms.OpenFileDialog();
             this.error = new System.Windows.Forms.ErrorProvider(this.components);
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.btnResume = new System.Windows.Forms.Button();
-            this.btnHalt = new System.Windows.Forms.Button();
+            this.cbResumeAfterReset = new System.Windows.Forms.CheckBox();
             this.status.SuspendLayout();
             this.groupAllControls.SuspendLayout();
+            this.groupBox5.SuspendLayout();
             this.groupBox4.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -139,7 +142,7 @@
             this.status.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.progressBar,
             this.statusLine});
-            this.status.Location = new System.Drawing.Point(0, 557);
+            this.status.Location = new System.Drawing.Point(0, 596);
             this.status.Name = "status";
             this.status.Size = new System.Drawing.Size(413, 26);
             this.status.TabIndex = 2;
@@ -160,7 +163,7 @@
             // 
             // label1
             // 
-            this.label1.Location = new System.Drawing.Point(9, 97);
+            this.label1.Location = new System.Drawing.Point(15, 107);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(53, 23);
             this.label1.TabIndex = 4;
@@ -170,7 +173,7 @@
             // labelChipID
             // 
             this.labelChipID.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.labelChipID.Location = new System.Drawing.Point(68, 97);
+            this.labelChipID.Location = new System.Drawing.Point(74, 107);
             this.labelChipID.Name = "labelChipID";
             this.labelChipID.Size = new System.Drawing.Size(65, 22);
             this.labelChipID.TabIndex = 5;
@@ -178,7 +181,7 @@
             // 
             // label2
             // 
-            this.label2.Location = new System.Drawing.Point(9, 122);
+            this.label2.Location = new System.Drawing.Point(15, 132);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(53, 23);
             this.label2.TabIndex = 6;
@@ -188,7 +191,7 @@
             // labelChipSeries
             // 
             this.labelChipSeries.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.labelChipSeries.Location = new System.Drawing.Point(68, 122);
+            this.labelChipSeries.Location = new System.Drawing.Point(74, 132);
             this.labelChipSeries.Name = "labelChipSeries";
             this.labelChipSeries.Size = new System.Drawing.Size(65, 22);
             this.labelChipSeries.TabIndex = 7;
@@ -196,7 +199,7 @@
             // 
             // label4
             // 
-            this.label4.Location = new System.Drawing.Point(9, 147);
+            this.label4.Location = new System.Drawing.Point(15, 157);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(53, 23);
             this.label4.TabIndex = 8;
@@ -206,7 +209,7 @@
             // labelRevision
             // 
             this.labelRevision.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.labelRevision.Location = new System.Drawing.Point(68, 147);
+            this.labelRevision.Location = new System.Drawing.Point(74, 157);
             this.labelRevision.Name = "labelRevision";
             this.labelRevision.Size = new System.Drawing.Size(65, 22);
             this.labelRevision.TabIndex = 9;
@@ -215,9 +218,9 @@
             // btnWrite
             // 
             this.btnWrite.Enabled = false;
-            this.btnWrite.Location = new System.Drawing.Point(106, 117);
+            this.btnWrite.Location = new System.Drawing.Point(55, 108);
             this.btnWrite.Name = "btnWrite";
-            this.btnWrite.Size = new System.Drawing.Size(84, 23);
+            this.btnWrite.Size = new System.Drawing.Size(100, 23);
             this.btnWrite.TabIndex = 10;
             this.btnWrite.Text = "Write";
             this.btnWrite.UseVisualStyleBackColor = true;
@@ -226,9 +229,9 @@
             // btnRead
             // 
             this.btnRead.Enabled = false;
-            this.btnRead.Location = new System.Drawing.Point(207, 117);
+            this.btnRead.Location = new System.Drawing.Point(155, 108);
             this.btnRead.Name = "btnRead";
-            this.btnRead.Size = new System.Drawing.Size(84, 23);
+            this.btnRead.Size = new System.Drawing.Size(100, 23);
             this.btnRead.TabIndex = 11;
             this.btnRead.Text = "Read";
             this.btnRead.UseVisualStyleBackColor = true;
@@ -237,9 +240,9 @@
             // btnVerify
             // 
             this.btnVerify.Enabled = false;
-            this.btnVerify.Location = new System.Drawing.Point(308, 117);
+            this.btnVerify.Location = new System.Drawing.Point(255, 108);
             this.btnVerify.Name = "btnVerify";
-            this.btnVerify.Size = new System.Drawing.Size(84, 23);
+            this.btnVerify.Size = new System.Drawing.Size(100, 23);
             this.btnVerify.TabIndex = 12;
             this.btnVerify.Text = "Verify";
             this.btnVerify.UseVisualStyleBackColor = true;
@@ -273,8 +276,8 @@
             this.groupAllControls.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupAllControls.Controls.Add(this.btnHalt);
-            this.groupAllControls.Controls.Add(this.btnResume);
+            this.groupAllControls.Controls.Add(this.groupBox5);
+            this.groupAllControls.Controls.Add(this.btnChipErase);
             this.groupAllControls.Controls.Add(this.btnFlashRST);
             this.groupAllControls.Controls.Add(this.btnFlashDC);
             this.groupAllControls.Controls.Add(this.btnFlashDD);
@@ -296,15 +299,57 @@
             this.groupAllControls.Enabled = false;
             this.groupAllControls.Location = new System.Drawing.Point(0, 32);
             this.groupAllControls.Name = "groupAllControls";
-            this.groupAllControls.Size = new System.Drawing.Size(413, 530);
+            this.groupAllControls.Size = new System.Drawing.Size(413, 569);
             this.groupAllControls.TabIndex = 15;
             this.groupAllControls.TabStop = false;
             // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.cbResumeAfterReset);
+            this.groupBox5.Controls.Add(this.btnReset);
+            this.groupBox5.Controls.Add(this.btnResumeHalt);
+            this.groupBox5.Location = new System.Drawing.Point(6, 12);
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.Size = new System.Drawing.Size(139, 76);
+            this.groupBox5.TabIndex = 76;
+            this.groupBox5.TabStop = false;
+            this.groupBox5.Text = "CPU";
+            // 
+            // btnReset
+            // 
+            this.btnReset.Location = new System.Drawing.Point(6, 44);
+            this.btnReset.Name = "btnReset";
+            this.btnReset.Size = new System.Drawing.Size(60, 23);
+            this.btnReset.TabIndex = 76;
+            this.btnReset.Text = "Reset";
+            this.btnReset.UseVisualStyleBackColor = true;
+            this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
+            // 
+            // btnResumeHalt
+            // 
+            this.btnResumeHalt.Location = new System.Drawing.Point(6, 15);
+            this.btnResumeHalt.Name = "btnResumeHalt";
+            this.btnResumeHalt.Size = new System.Drawing.Size(60, 23);
+            this.btnResumeHalt.TabIndex = 75;
+            this.btnResumeHalt.Text = "Resume";
+            this.btnResumeHalt.UseVisualStyleBackColor = true;
+            this.btnResumeHalt.Click += new System.EventHandler(this.btnResumeHalt_Click);
+            // 
+            // btnChipErase
+            // 
+            this.btnChipErase.Location = new System.Drawing.Point(64, 183);
+            this.btnChipErase.Name = "btnChipErase";
+            this.btnChipErase.Size = new System.Drawing.Size(75, 23);
+            this.btnChipErase.TabIndex = 75;
+            this.btnChipErase.Text = "Chip Erase";
+            this.btnChipErase.UseVisualStyleBackColor = true;
+            this.btnChipErase.Click += new System.EventHandler(this.btnChipErase_Click);
+            // 
             // btnFlashRST
             // 
-            this.btnFlashRST.Location = new System.Drawing.Point(146, 88);
+            this.btnFlashRST.Location = new System.Drawing.Point(151, 124);
             this.btnFlashRST.Name = "btnFlashRST";
-            this.btnFlashRST.Size = new System.Drawing.Size(100, 23);
+            this.btnFlashRST.Size = new System.Drawing.Size(95, 23);
             this.btnFlashRST.TabIndex = 71;
             this.btnFlashRST.Text = "Flash RST";
             this.toolTip.SetToolTip(this.btnFlashRST, "Make 5 pulses on RST line");
@@ -313,9 +358,9 @@
             // 
             // btnFlashDC
             // 
-            this.btnFlashDC.Location = new System.Drawing.Point(146, 65);
+            this.btnFlashDC.Location = new System.Drawing.Point(151, 101);
             this.btnFlashDC.Name = "btnFlashDC";
-            this.btnFlashDC.Size = new System.Drawing.Size(100, 23);
+            this.btnFlashDC.Size = new System.Drawing.Size(95, 23);
             this.btnFlashDC.TabIndex = 70;
             this.btnFlashDC.Text = "Flash DC";
             this.toolTip.SetToolTip(this.btnFlashDC, "Make 5 pulses on DC line");
@@ -324,9 +369,9 @@
             // 
             // btnFlashDD
             // 
-            this.btnFlashDD.Location = new System.Drawing.Point(146, 42);
+            this.btnFlashDD.Location = new System.Drawing.Point(151, 77);
             this.btnFlashDD.Name = "btnFlashDD";
-            this.btnFlashDD.Size = new System.Drawing.Size(100, 23);
+            this.btnFlashDD.Size = new System.Drawing.Size(95, 23);
             this.btnFlashDD.TabIndex = 69;
             this.btnFlashDD.Text = "Flash DD";
             this.toolTip.SetToolTip(this.btnFlashDD, "Make 5 pulses on DD line");
@@ -338,7 +383,6 @@
             this.groupBox4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox4.Controls.Add(this.cbResumeAfterWrite);
-            this.groupBox4.Controls.Add(this.btnChipErase);
             this.groupBox4.Controls.Add(this.filename);
             this.groupBox4.Controls.Add(this.btnRead);
             this.groupBox4.Controls.Add(this.endAddress);
@@ -350,7 +394,7 @@
             this.groupBox4.Controls.Add(this.label9);
             this.groupBox4.Controls.Add(this.btnSelectFile);
             this.groupBox4.Controls.Add(this.cbErasePage);
-            this.groupBox4.Location = new System.Drawing.Point(7, 185);
+            this.groupBox4.Location = new System.Drawing.Point(9, 222);
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Size = new System.Drawing.Size(398, 146);
             this.groupBox4.TabIndex = 68;
@@ -362,41 +406,31 @@
             this.cbResumeAfterWrite.AutoSize = true;
             this.cbResumeAfterWrite.Checked = true;
             this.cbResumeAfterWrite.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.cbResumeAfterWrite.Location = new System.Drawing.Point(256, 94);
+            this.cbResumeAfterWrite.Location = new System.Drawing.Point(256, 89);
             this.cbResumeAfterWrite.Name = "cbResumeAfterWrite";
             this.cbResumeAfterWrite.Size = new System.Drawing.Size(118, 17);
             this.cbResumeAfterWrite.TabIndex = 57;
             this.cbResumeAfterWrite.Text = "Resume After Write";
             this.cbResumeAfterWrite.UseVisualStyleBackColor = true;
             // 
-            // btnChipErase
-            // 
-            this.btnChipErase.Location = new System.Drawing.Point(5, 117);
-            this.btnChipErase.Name = "btnChipErase";
-            this.btnChipErase.Size = new System.Drawing.Size(84, 23);
-            this.btnChipErase.TabIndex = 56;
-            this.btnChipErase.Text = "Chip Erase";
-            this.btnChipErase.UseVisualStyleBackColor = true;
-            this.btnChipErase.Click += new System.EventHandler(this.btnChipErase_Click);
-            // 
             // filename
             // 
-            this.filename.Location = new System.Drawing.Point(55, 19);
+            this.filename.Location = new System.Drawing.Point(28, 19);
             this.filename.Name = "filename";
-            this.filename.Size = new System.Drawing.Size(268, 20);
+            this.filename.Size = new System.Drawing.Size(310, 20);
             this.filename.TabIndex = 8;
             this.filename.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // endAddress
             // 
-            this.endAddress.Location = new System.Drawing.Point(119, 69);
+            this.endAddress.Location = new System.Drawing.Point(116, 82);
             this.endAddress.Name = "endAddress";
             this.endAddress.Size = new System.Drawing.Size(100, 20);
             this.endAddress.TabIndex = 5;
             // 
             // label10
             // 
-            this.label10.Location = new System.Drawing.Point(60, 67);
+            this.label10.Location = new System.Drawing.Point(57, 80);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(53, 23);
             this.label10.TabIndex = 55;
@@ -405,14 +439,14 @@
             // 
             // startAddress
             // 
-            this.startAddress.Location = new System.Drawing.Point(119, 45);
+            this.startAddress.Location = new System.Drawing.Point(116, 58);
             this.startAddress.Name = "startAddress";
             this.startAddress.Size = new System.Drawing.Size(100, 20);
             this.startAddress.TabIndex = 4;
             // 
             // label9
             // 
-            this.label9.Location = new System.Drawing.Point(63, 43);
+            this.label9.Location = new System.Drawing.Point(60, 56);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(50, 23);
             this.label9.TabIndex = 53;
@@ -421,7 +455,7 @@
             // 
             // btnSelectFile
             // 
-            this.btnSelectFile.Location = new System.Drawing.Point(329, 17);
+            this.btnSelectFile.Location = new System.Drawing.Point(344, 17);
             this.btnSelectFile.Name = "btnSelectFile";
             this.btnSelectFile.Size = new System.Drawing.Size(28, 23);
             this.btnSelectFile.TabIndex = 9;
@@ -434,7 +468,7 @@
             this.cbErasePage.AutoSize = true;
             this.cbErasePage.Checked = true;
             this.cbErasePage.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.cbErasePage.Location = new System.Drawing.Point(256, 71);
+            this.cbErasePage.Location = new System.Drawing.Point(256, 68);
             this.cbErasePage.Name = "cbErasePage";
             this.cbErasePage.Size = new System.Drawing.Size(80, 17);
             this.cbErasePage.TabIndex = 7;
@@ -458,7 +492,7 @@
             this.groupBox3.Controls.Add(this.label16);
             this.groupBox3.Location = new System.Drawing.Point(252, 12);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(153, 167);
+            this.groupBox3.Size = new System.Drawing.Size(153, 181);
             this.groupBox3.TabIndex = 67;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Check CC LED";
@@ -475,7 +509,7 @@
             // btnFlashCC
             // 
             this.btnFlashCC.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnFlashCC.Location = new System.Drawing.Point(9, 135);
+            this.btnFlashCC.Location = new System.Drawing.Point(9, 145);
             this.btnFlashCC.Name = "btnFlashCC";
             this.btnFlashCC.Size = new System.Drawing.Size(133, 23);
             this.btnFlashCC.TabIndex = 30;
@@ -578,7 +612,7 @@
             this.groupBox2.Controls.Add(this.label12);
             this.groupBox2.Controls.Add(this.label8);
             this.groupBox2.Controls.Add(this.label_SEL_FLASH_INFO);
-            this.groupBox2.Location = new System.Drawing.Point(202, 417);
+            this.groupBox2.Location = new System.Drawing.Point(204, 454);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(203, 103);
             this.groupBox2.TabIndex = 52;
@@ -664,7 +698,7 @@
             // btnGetStatus
             // 
             this.btnGetStatus.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnGetStatus.Location = new System.Drawing.Point(202, 348);
+            this.btnGetStatus.Location = new System.Drawing.Point(204, 385);
             this.btnGetStatus.Name = "btnGetStatus";
             this.btnGetStatus.Size = new System.Drawing.Size(100, 23);
             this.btnGetStatus.TabIndex = 13;
@@ -675,7 +709,7 @@
             // btnExit
             // 
             this.btnExit.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnExit.Location = new System.Drawing.Point(305, 348);
+            this.btnExit.Location = new System.Drawing.Point(307, 385);
             this.btnExit.Name = "btnExit";
             this.btnExit.Size = new System.Drawing.Size(100, 23);
             this.btnExit.TabIndex = 40;
@@ -686,7 +720,7 @@
             // labelChipSize
             // 
             this.labelChipSize.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.labelChipSize.Location = new System.Drawing.Point(192, 147);
+            this.labelChipSize.Location = new System.Drawing.Point(192, 183);
             this.labelChipSize.Name = "labelChipSize";
             this.labelChipSize.Size = new System.Drawing.Size(54, 22);
             this.labelChipSize.TabIndex = 29;
@@ -694,7 +728,7 @@
             // 
             // label7
             // 
-            this.label7.Location = new System.Drawing.Point(146, 147);
+            this.label7.Location = new System.Drawing.Point(146, 183);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(40, 23);
             this.label7.TabIndex = 28;
@@ -705,9 +739,9 @@
             // 
             this.chipModel.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
             this.chipModel.FormattingEnabled = true;
-            this.chipModel.Location = new System.Drawing.Point(146, 122);
+            this.chipModel.Location = new System.Drawing.Point(151, 158);
             this.chipModel.Name = "chipModel";
-            this.chipModel.Size = new System.Drawing.Size(100, 21);
+            this.chipModel.Size = new System.Drawing.Size(95, 21);
             this.chipModel.TabIndex = 3;
             this.chipModel.SelectedIndexChanged += new System.EventHandler(this.chipModel_SelectedIndexChanged);
             // 
@@ -729,7 +763,7 @@
             this.groupBox1.Controls.Add(this.label25);
             this.groupBox1.Controls.Add(this.status_STACK_OVERFLOW);
             this.groupBox1.Controls.Add(this.label6);
-            this.groupBox1.Location = new System.Drawing.Point(7, 337);
+            this.groupBox1.Location = new System.Drawing.Point(9, 374);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(189, 182);
             this.groupBox1.TabIndex = 51;
@@ -897,32 +931,23 @@
             // 
             this.error.ContainerControl = this;
             // 
-            // btnResume
+            // cbResumeAfterReset
             // 
-            this.btnResume.Location = new System.Drawing.Point(12, 12);
-            this.btnResume.Name = "btnResume";
-            this.btnResume.Size = new System.Drawing.Size(75, 23);
-            this.btnResume.TabIndex = 73;
-            this.btnResume.Text = "Resume";
-            this.btnResume.UseVisualStyleBackColor = true;
-            this.btnResume.Click += new System.EventHandler(this.btnResume_Click);
-            // 
-            // btnHalt
-            // 
-            this.btnHalt.Location = new System.Drawing.Point(12, 41);
-            this.btnHalt.Name = "btnHalt";
-            this.btnHalt.Size = new System.Drawing.Size(75, 23);
-            this.btnHalt.TabIndex = 74;
-            this.btnHalt.Text = "Halt";
-            this.btnHalt.UseVisualStyleBackColor = true;
-            this.btnHalt.Click += new System.EventHandler(this.btnHalt_Click);
+            this.cbResumeAfterReset.Checked = true;
+            this.cbResumeAfterReset.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbResumeAfterReset.Location = new System.Drawing.Point(72, 15);
+            this.cbResumeAfterReset.Name = "cbResumeAfterReset";
+            this.cbResumeAfterReset.Size = new System.Drawing.Size(66, 51);
+            this.cbResumeAfterReset.TabIndex = 77;
+            this.cbResumeAfterReset.Text = "Resume\r\nAfter Reset";
+            this.cbResumeAfterReset.UseVisualStyleBackColor = true;
             // 
             // CCFlash
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnExit;
-            this.ClientSize = new System.Drawing.Size(413, 583);
+            this.ClientSize = new System.Drawing.Size(413, 622);
             this.Controls.Add(this.groupAllControls);
             this.Controls.Add(this.status);
             this.Controls.Add(this.serialPorts);
@@ -936,6 +961,7 @@
             this.status.ResumeLayout(false);
             this.status.PerformLayout();
             this.groupAllControls.ResumeLayout(false);
+            this.groupBox5.ResumeLayout(false);
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
             this.groupBox3.ResumeLayout(false);
@@ -1024,10 +1050,12 @@
 		private System.Windows.Forms.Button btnFlashDC;
 		private System.Windows.Forms.Button btnFlashDD;
 		private System.Windows.Forms.ToolTip toolTip;
-        private System.Windows.Forms.Button btnChipErase;
         private System.Windows.Forms.CheckBox cbResumeAfterWrite;
-        private System.Windows.Forms.Button btnHalt;
-        private System.Windows.Forms.Button btnResume;
+        private System.Windows.Forms.Button btnChipErase;
+        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.Button btnReset;
+        private System.Windows.Forms.Button btnResumeHalt;
+        private System.Windows.Forms.CheckBox cbResumeAfterReset;
     }
 }
 
