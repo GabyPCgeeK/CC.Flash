@@ -46,11 +46,11 @@
             this.cbVerifyAfterWrite = new System.Windows.Forms.CheckBox();
             this.cbAutoConnect = new System.Windows.Forms.CheckBox();
             this.groupAllControls = new System.Windows.Forms.GroupBox();
-            this.btnResume = new System.Windows.Forms.Button();
             this.btnFlashRST = new System.Windows.Forms.Button();
             this.btnFlashDC = new System.Windows.Forms.Button();
             this.btnFlashDD = new System.Windows.Forms.Button();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.cbResumeAfterWrite = new System.Windows.Forms.CheckBox();
             this.btnChipErase = new System.Windows.Forms.Button();
             this.filename = new System.Windows.Forms.TextBox();
             this.endAddress = new System.Windows.Forms.TextBox();
@@ -105,7 +105,8 @@
             this.openFile = new System.Windows.Forms.OpenFileDialog();
             this.error = new System.Windows.Forms.ErrorProvider(this.components);
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.cbResumeAfterWrite = new System.Windows.Forms.CheckBox();
+            this.btnResume = new System.Windows.Forms.Button();
+            this.btnHalt = new System.Windows.Forms.Button();
             this.status.SuspendLayout();
             this.groupAllControls.SuspendLayout();
             this.groupBox4.SuspendLayout();
@@ -272,6 +273,7 @@
             this.groupAllControls.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupAllControls.Controls.Add(this.btnHalt);
             this.groupAllControls.Controls.Add(this.btnResume);
             this.groupAllControls.Controls.Add(this.btnFlashRST);
             this.groupAllControls.Controls.Add(this.btnFlashDC);
@@ -297,16 +299,6 @@
             this.groupAllControls.Size = new System.Drawing.Size(413, 530);
             this.groupAllControls.TabIndex = 15;
             this.groupAllControls.TabStop = false;
-            // 
-            // btnResume
-            // 
-            this.btnResume.Location = new System.Drawing.Point(202, 377);
-            this.btnResume.Name = "btnResume";
-            this.btnResume.Size = new System.Drawing.Size(100, 23);
-            this.btnResume.TabIndex = 72;
-            this.btnResume.Text = "Resume";
-            this.btnResume.UseVisualStyleBackColor = true;
-            this.btnResume.Click += new System.EventHandler(this.btnResume_Click);
             // 
             // btnFlashRST
             // 
@@ -364,6 +356,18 @@
             this.groupBox4.TabIndex = 68;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "READ / WRITE";
+            // 
+            // cbResumeAfterWrite
+            // 
+            this.cbResumeAfterWrite.AutoSize = true;
+            this.cbResumeAfterWrite.Checked = true;
+            this.cbResumeAfterWrite.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbResumeAfterWrite.Location = new System.Drawing.Point(256, 94);
+            this.cbResumeAfterWrite.Name = "cbResumeAfterWrite";
+            this.cbResumeAfterWrite.Size = new System.Drawing.Size(118, 17);
+            this.cbResumeAfterWrite.TabIndex = 57;
+            this.cbResumeAfterWrite.Text = "Resume After Write";
+            this.cbResumeAfterWrite.UseVisualStyleBackColor = true;
             // 
             // btnChipErase
             // 
@@ -887,23 +891,31 @@
             // openFile
             // 
             this.openFile.CheckFileExists = false;
-            this.openFile.Filter = "BIN|*.bin|All files|*.*";
+            this.openFile.Filter = "Supported Files|*.bin;*.ihx;*.hex|BIN|*.bin|HEX|*.ihx;*.hex|All files|*.*";
             // 
             // error
             // 
             this.error.ContainerControl = this;
             // 
-            // cbResumeAfterWrite
+            // btnResume
             // 
-            this.cbResumeAfterWrite.AutoSize = true;
-            this.cbResumeAfterWrite.Checked = true;
-            this.cbResumeAfterWrite.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.cbResumeAfterWrite.Location = new System.Drawing.Point(256, 94);
-            this.cbResumeAfterWrite.Name = "cbResumeAfterWrite";
-            this.cbResumeAfterWrite.Size = new System.Drawing.Size(118, 17);
-            this.cbResumeAfterWrite.TabIndex = 57;
-            this.cbResumeAfterWrite.Text = "Resume After Write";
-            this.cbResumeAfterWrite.UseVisualStyleBackColor = true;
+            this.btnResume.Location = new System.Drawing.Point(12, 12);
+            this.btnResume.Name = "btnResume";
+            this.btnResume.Size = new System.Drawing.Size(75, 23);
+            this.btnResume.TabIndex = 73;
+            this.btnResume.Text = "Resume";
+            this.btnResume.UseVisualStyleBackColor = true;
+            this.btnResume.Click += new System.EventHandler(this.btnResume_Click);
+            // 
+            // btnHalt
+            // 
+            this.btnHalt.Location = new System.Drawing.Point(12, 41);
+            this.btnHalt.Name = "btnHalt";
+            this.btnHalt.Size = new System.Drawing.Size(75, 23);
+            this.btnHalt.TabIndex = 74;
+            this.btnHalt.Text = "Halt";
+            this.btnHalt.UseVisualStyleBackColor = true;
+            this.btnHalt.Click += new System.EventHandler(this.btnHalt_Click);
             // 
             // CCFlash
             // 
@@ -1013,8 +1025,9 @@
 		private System.Windows.Forms.Button btnFlashDD;
 		private System.Windows.Forms.ToolTip toolTip;
         private System.Windows.Forms.Button btnChipErase;
-        private System.Windows.Forms.Button btnResume;
         private System.Windows.Forms.CheckBox cbResumeAfterWrite;
+        private System.Windows.Forms.Button btnHalt;
+        private System.Windows.Forms.Button btnResume;
     }
 }
 

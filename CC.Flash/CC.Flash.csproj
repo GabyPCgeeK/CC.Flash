@@ -113,6 +113,12 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\IntelHexParser\IntelHexParser.csproj">
+      <Project>{e15e262f-0fb2-4b14-9db2-80ab870e1414}</Project>
+      <Name>IntelHexParser</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

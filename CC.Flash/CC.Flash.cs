@@ -11,6 +11,7 @@ using System.Drawing;
 using CC.Flash.Properties;
 using System.IO;
 using System.Configuration;
+using Coshx.IntelHexParser;
 #endregion
 
 namespace CC.Flash
@@ -1295,8 +1296,29 @@ namespace CC.Flash
 				filename.Text = openFile.FileName;
 				FileInfo fi = new FileInfo(filename.Text);
 				startAddress.Text = "0x00000";
-				endAddress.Text = "0x" + fi.Length.ToString("X5");
-			}
+                if (fi.Exists)
+                {
+                    if (fi.Extension == ".bin")
+                        if (fi.Length == 0)
+                            endAddress.Text = "0x00000";
+                        else
+                            endAddress.Text = "0x" + (fi.Length - 1).ToString("X5");
+                    else if ((fi.Extension == ".ihx") || (fi.Extension == ".hex"))
+                    {
+                        StreamReader sr = new StreamReader(filename.Text);
+                        //string text = System.IO.File.ReadAllText(filename.Text);
+                        var serializer = new Coshx.IntelHexParser.Serializer();
+                        byte[] output = serializer.Deserialize(sr.ReadToEnd());
+                        
+                        endAddress.Text = "0x" + (output.Length - 1).ToString("X5");
+                        sr.Close();
+                    }
+                }
+                else
+                {
+                    endAddress.Text = "0x00000";
+                }
+            }
 		}
 		#endregion
 
@@ -1313,12 +1335,28 @@ namespace CC.Flash
 			}
 			if (File.Exists(filename.Text))
 			{
-				FileStream fs = null;
+                Stream fs = null;
                 bool okToResume = false;
 				try
 				{
 					groupAllControls.Enabled = false;
-					fs = new FileStream(filename.Text, FileMode.Open, FileAccess.Read, FileShare.Read, FLASH_PAGE_SIZE);
+
+                    FileInfo fi = new FileInfo(filename.Text);
+
+                    if ((fi.Extension == ".ihx") || (fi.Extension == ".hex"))
+                    {
+                        StreamReader sr = new StreamReader(filename.Text);
+                        var serializer = new Coshx.IntelHexParser.Serializer();
+                        byte[] output = serializer.Deserialize(sr.ReadToEnd());
+                        sr.Close();
+
+                        fs = new MemoryStream(output);
+                    }
+                    else
+                    {
+                        fs = new FileStream(filename.Text, FileMode.Open, FileAccess.Read, FileShare.Read, FLASH_PAGE_SIZE);
+                    }
+                    
 					byte[] buffer = new byte[FLASH_PAGE_SIZE];
 					bool valid = true;
 					int readed;
@@ -1519,6 +1557,14 @@ namespace CC.Flash
         {
             if (!RESUME())
                 MessageBox.Show("Error Resuming");
+            READ_STATUS();
+        }
+
+        private void btnHalt_Click(object sender, EventArgs e)
+        {
+            if (!HALT())
+                MessageBox.Show("Error Resuming");
+            READ_STATUS();
         }
     }
 }
