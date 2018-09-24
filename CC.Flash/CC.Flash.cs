@@ -185,7 +185,7 @@ namespace CC.Flash
 				return null;
 
 			string response = string.Empty;
-			const int retryMax = 500;
+			const int retryMax = 1000;
 			int retry = retryMax;
 
 			if (msg != null)
@@ -196,31 +196,26 @@ namespace CC.Flash
 				port.ReadChar();
 
 			command = prepareCommand(command);
-			int retryCmd = 10;
-			int idx = 0;
-			while (--retry > 0)
-			{
-				if (!waiting)
-					break;
+            port.Write(command);
 
-				if (idx < command.Length)
-				{
-					port.Write(command.Substring(idx++, 1));
-					Thread.Sleep(1);
-				}
+            int retryCmd = 10;
+            while (--retry > 0)
+            {
+                if (!waiting)
+                    break;
 
-				if (port.BytesToRead == 0)
-				{
-					Application.DoEvents();
-					Thread.Sleep(1);
-					if (command == "\r")
-						if (retryCmd-- == 0)
-						{
-							retryCmd = 10;
-							idx = 0;
-						}
-				}
-				else
+                if (port.BytesToRead == 0)
+                {
+                    Application.DoEvents();
+                    Thread.Sleep(1);
+                    if (command == "\r" && retryCmd-- == 0)
+                    {
+                        retryCmd = 10;
+                        port.Write(command);
+                        Thread.Sleep(1);
+                    }
+                }
+                else
 				{
 					++retry;
 					response += (char)port.ReadChar();
@@ -456,7 +451,7 @@ namespace CC.Flash
 				statusLine.Text = "";
 				return true;
 			}
-			statusLine.Text = "LED error:" + response;
+			statusLine.Text = "LED error:" + response.Replace("\r\n", " ").TrimEnd(new char[1] {':'});
 			return false;
 		}
 		#endregion
@@ -888,7 +883,9 @@ namespace CC.Flash
 				return false;
 
 			int i = 0;
-			int nextAddress = address;
+            address = 0x8000 + (address % 0x8000);
+
+            int nextAddress = address;
 			buffer = new byte[length];
 			byte data;
 
@@ -1172,7 +1169,9 @@ namespace CC.Flash
 				if (GET_CHIP_ID() && READ_STATUS()) {
 					setConnected();
 					groupAllControls.Enabled = true;
-				} else
+                    if (baudRates.SelectedItem.ToString() != "115200")
+                        this.BeginInvoke((MethodInvoker)delegate { baudRates_SelectedIndexChanged(sender, e); });
+                } else
 					setDisconnected();
 			}
 			else
@@ -1339,7 +1338,7 @@ namespace CC.Flash
 			{
                 Stream fs = null;
                 Stopwatch time = null;
-                bool okToResume = false;
+                bool noError = true;
 				try
 				{
 					groupAllControls.Enabled = false;
@@ -1426,25 +1425,27 @@ namespace CC.Flash
 						else
 							MessageBox.Show("File read not persistance");
 					}
-                    if (valid && cbResumeAfterWrite.Checked)
-                        okToResume = true;
-				}
+                    noError = valid;
+                }
 				catch (Exception ex)
 				{
+                    noError = false;
 					MessageBox.Show("Error: " + ex.Message);
 				}
 				finally
 				{
 					if (fs != null)
 						fs.Close();
-                    if (okToResume)
-                        RESUME();
-                    else
+                    if (noError)
                         DEBUG_INIT(false);
+                    if (noError && cbResumeAfterWrite.Checked)
+                        RESUME();
+                        
 					progressBar.Value = progressBar.Minimum;
 					groupAllControls.Enabled = true;
                     time.Stop();
-                    statusLine.Text = "Wrote Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
+                    if (noError)
+                        statusLine.Text = "Wrote Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
                 }
 			}
 			else
@@ -1555,6 +1556,7 @@ namespace CC.Flash
 		}
         #endregion
 
+        #region btnChipErase_Click(object sender, EventArgs e)
         private void btnChipErase_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show("Are you sure?\nAll data in Flash will be lost.", "CHIP_ERASE", MessageBoxButtons.OKCancel) == DialogResult.OK)
@@ -1565,7 +1567,9 @@ namespace CC.Flash
                     statusLine.Text = "Error Erasing Chip";
             }
         }
+        #endregion
 
+        #region btnResumeHalt_Click(object sender, EventArgs e)
         private void btnResumeHalt_Click(object sender, EventArgs e)
         {
             READ_STATUS();
@@ -1581,7 +1585,9 @@ namespace CC.Flash
             }
             READ_STATUS();
         }
+        #endregion
 
+        #region btnReset_Click(object sender, EventArgs e)
         private void btnReset_Click(object sender, EventArgs e)
         {
             FLASHRST(true);
@@ -1602,5 +1608,32 @@ namespace CC.Flash
                 groupAllControls.Enabled = false;
             }
         }
+        #endregion
+
+        #region baudRates_SelectedIndexChanged(object sender, EventArgs e)
+        private void baudRates_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (port != null)
+            {
+                int baud = int.Parse(baudRates.SelectedItem.ToString());
+                string response = sendCommand(string.Format("B{0:X6}", baud), "Changing Baud Rate to " + baud + "bps ...");
+                if (parseOK(response))
+                {
+                    port.BaudRate = baud;
+                    response = sendCommand("T56", "Testing Baud Rate ...");
+                    if (parseOK(response))
+                    {
+                        statusLine.Text = "Changed Baud Rate to " + baud + "bps";
+                    }
+                    else
+                    {
+                        statusLine.Text = "Failed to Change Baud Rate to " + baud + "bps";
+                        setDisconnected();
+                        groupAllControls.Enabled = false;
+                    }
+                }
+            }
+        }
+        #endregion
     }
 }

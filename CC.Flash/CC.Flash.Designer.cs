@@ -47,6 +47,7 @@
             this.cbAutoConnect = new System.Windows.Forms.CheckBox();
             this.groupAllControls = new System.Windows.Forms.GroupBox();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.cbResumeAfterReset = new System.Windows.Forms.CheckBox();
             this.btnReset = new System.Windows.Forms.Button();
             this.btnResumeHalt = new System.Windows.Forms.Button();
             this.btnChipErase = new System.Windows.Forms.Button();
@@ -108,7 +109,8 @@
             this.openFile = new System.Windows.Forms.OpenFileDialog();
             this.error = new System.Windows.Forms.ErrorProvider(this.components);
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.cbResumeAfterReset = new System.Windows.Forms.CheckBox();
+            this.baudRates = new System.Windows.Forms.ComboBox();
+            this.label19 = new System.Windows.Forms.Label();
             this.status.SuspendLayout();
             this.groupAllControls.SuspendLayout();
             this.groupBox5.SuspendLayout();
@@ -124,14 +126,14 @@
             this.serialPorts.FormattingEnabled = true;
             this.serialPorts.Location = new System.Drawing.Point(7, 6);
             this.serialPorts.Name = "serialPorts";
-            this.serialPorts.Size = new System.Drawing.Size(121, 21);
+            this.serialPorts.Size = new System.Drawing.Size(61, 21);
             this.serialPorts.TabIndex = 0;
             // 
             // btnConnect
             // 
-            this.btnConnect.Location = new System.Drawing.Point(133, 3);
+            this.btnConnect.Location = new System.Drawing.Point(192, 5);
             this.btnConnect.Name = "btnConnect";
-            this.btnConnect.Size = new System.Drawing.Size(100, 23);
+            this.btnConnect.Size = new System.Drawing.Size(78, 23);
             this.btnConnect.TabIndex = 2;
             this.btnConnect.Text = "Connect";
             this.btnConnect.UseVisualStyleBackColor = true;
@@ -218,7 +220,7 @@
             // btnWrite
             // 
             this.btnWrite.Enabled = false;
-            this.btnWrite.Location = new System.Drawing.Point(55, 108);
+            this.btnWrite.Location = new System.Drawing.Point(46, 108);
             this.btnWrite.Name = "btnWrite";
             this.btnWrite.Size = new System.Drawing.Size(100, 23);
             this.btnWrite.TabIndex = 10;
@@ -229,7 +231,7 @@
             // btnRead
             // 
             this.btnRead.Enabled = false;
-            this.btnRead.Location = new System.Drawing.Point(155, 108);
+            this.btnRead.Location = new System.Drawing.Point(146, 108);
             this.btnRead.Name = "btnRead";
             this.btnRead.Size = new System.Drawing.Size(100, 23);
             this.btnRead.TabIndex = 11;
@@ -240,7 +242,7 @@
             // btnVerify
             // 
             this.btnVerify.Enabled = false;
-            this.btnVerify.Location = new System.Drawing.Point(255, 108);
+            this.btnVerify.Location = new System.Drawing.Point(246, 108);
             this.btnVerify.Name = "btnVerify";
             this.btnVerify.Size = new System.Drawing.Size(100, 23);
             this.btnVerify.TabIndex = 12;
@@ -264,11 +266,11 @@
             this.cbAutoConnect.AutoSize = true;
             this.cbAutoConnect.Checked = true;
             this.cbAutoConnect.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.cbAutoConnect.Location = new System.Drawing.Point(252, 6);
+            this.cbAutoConnect.Location = new System.Drawing.Point(276, 9);
             this.cbAutoConnect.Name = "cbAutoConnect";
-            this.cbAutoConnect.Size = new System.Drawing.Size(129, 17);
+            this.cbAutoConnect.Size = new System.Drawing.Size(131, 17);
             this.cbAutoConnect.TabIndex = 1;
-            this.cbAutoConnect.Text = "Auto Connect on start";
+            this.cbAutoConnect.Text = "Auto Connect on Start";
             this.cbAutoConnect.UseVisualStyleBackColor = true;
             // 
             // groupAllControls
@@ -314,6 +316,17 @@
             this.groupBox5.TabIndex = 76;
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "CPU";
+            // 
+            // cbResumeAfterReset
+            // 
+            this.cbResumeAfterReset.Checked = true;
+            this.cbResumeAfterReset.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbResumeAfterReset.Location = new System.Drawing.Point(72, 15);
+            this.cbResumeAfterReset.Name = "cbResumeAfterReset";
+            this.cbResumeAfterReset.Size = new System.Drawing.Size(66, 51);
+            this.cbResumeAfterReset.TabIndex = 77;
+            this.cbResumeAfterReset.Text = "Resume\r\nAfter Reset";
+            this.cbResumeAfterReset.UseVisualStyleBackColor = true;
             // 
             // btnReset
             // 
@@ -931,16 +944,39 @@
             // 
             this.error.ContainerControl = this;
             // 
-            // cbResumeAfterReset
+            // baudRates
             // 
-            this.cbResumeAfterReset.Checked = true;
-            this.cbResumeAfterReset.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.cbResumeAfterReset.Location = new System.Drawing.Point(72, 15);
-            this.cbResumeAfterReset.Name = "cbResumeAfterReset";
-            this.cbResumeAfterReset.Size = new System.Drawing.Size(66, 51);
-            this.cbResumeAfterReset.TabIndex = 77;
-            this.cbResumeAfterReset.Text = "Resume\r\nAfter Reset";
-            this.cbResumeAfterReset.UseVisualStyleBackColor = true;
+            this.baudRates.FormattingEnabled = true;
+            this.baudRates.Items.AddRange(new object[] {
+            "300",
+            "1200",
+            "2400",
+            "4800",
+            "9600",
+            "19200",
+            "38400",
+            "57600",
+            "74880",
+            "115200",
+            "250000",
+            "500000",
+            "1000000",
+            "2000000"});
+            this.baudRates.Location = new System.Drawing.Point(115, 6);
+            this.baudRates.Name = "baudRates";
+            this.baudRates.Size = new System.Drawing.Size(71, 21);
+            this.baudRates.TabIndex = 16;
+            this.baudRates.Text = "115200";
+            this.baudRates.SelectedIndexChanged += new System.EventHandler(this.baudRates_SelectedIndexChanged);
+            // 
+            // label19
+            // 
+            this.label19.AutoSize = true;
+            this.label19.Location = new System.Drawing.Point(74, 9);
+            this.label19.Name = "label19";
+            this.label19.Size = new System.Drawing.Size(35, 13);
+            this.label19.TabIndex = 17;
+            this.label19.Text = "Baud:";
             // 
             // CCFlash
             // 
@@ -948,6 +984,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnExit;
             this.ClientSize = new System.Drawing.Size(413, 622);
+            this.Controls.Add(this.label19);
+            this.Controls.Add(this.baudRates);
             this.Controls.Add(this.groupAllControls);
             this.Controls.Add(this.status);
             this.Controls.Add(this.serialPorts);
@@ -1056,6 +1094,8 @@
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnResumeHalt;
         private System.Windows.Forms.CheckBox cbResumeAfterReset;
+        private System.Windows.Forms.ComboBox baudRates;
+        private System.Windows.Forms.Label label19;
     }
 }
 

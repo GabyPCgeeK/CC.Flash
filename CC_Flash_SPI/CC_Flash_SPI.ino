@@ -1,10 +1,11 @@
 #include <FastGPIO.h>
+#include <SPI.h>
 
 #include <ctype.h>
 
 #define LED               LED_BUILTIN
-#define CC_DC             5
-#define CC_DD             6
+#define CC_DC             13
+//#define CC_DD             6
 #define CC_RST            7
 
 #define BUFFER_SIZE       140
@@ -22,9 +23,12 @@ void setup() {
 
   FastGPIO::Pin<LED>::setOutputLow();
 
-  FastGPIO::Pin<CC_DC>::setOutputLow();
-  FastGPIO::Pin<CC_DD>::setOutputLow();
+  //FastGPIO::Pin<CC_DC>::setOutputLow();
+  //FastGPIO::Pin<CC_DD>::setOutputLow();
   FastGPIO::Pin<CC_RST>::setInputPulledUp();
+  SPI.begin();
+  SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE1));
+  pinMode(10, OUTPUT);
 
   Serial.begin(115200);
   LED_OFF();
@@ -156,8 +160,8 @@ void CMD_LED() {
     case '1': LED_ON();                                     break;
     case '3': FastGPIO::Pin<CC_DC>::setOutputValueHigh();   break;
     case '4': FastGPIO::Pin<CC_DC>::setOutputValueLow();    break;
-    case '5': FastGPIO::Pin<CC_DD>::setOutputValueHigh();   break;
-    case '6': FastGPIO::Pin<CC_DD>::setOutputValueLow();    break;
+    //case '5': FastGPIO::Pin<CC_DD>::setOutputValueHigh();   break;
+    //case '6': FastGPIO::Pin<CC_DD>::setOutputValueLow();    break;
     case '7': FastGPIO::Pin<CC_RST>::setOutputLow();        break;
     case '8': FastGPIO::Pin<CC_RST>::setInputPulledUp();    break;
   }
@@ -275,13 +279,14 @@ bool CMD_EXTENDED_WRITE() {
   byte cnt = inBuffer[idx++] - '0';
   if (!cnt)
     return true;
+  dbg_setwrite();
   while (cnt-- > 0) {
     if (idx+1 >= inDataLen || !isHexByte(idx))
       return false;
     dbg_write(getHexByte(idx));
     idx += 2;
   }
-  cc_delay(10);
+  //cc_delay(10);
   return true;
 }
 
@@ -292,6 +297,7 @@ bool CMD_EXTENDED_READ() {
   Serial.print("READ:");
   byte cnt = inBuffer[idx++] - '0';
   byte csum = 0;
+  dbg_setread();
   while (cnt-- > 0) {
     byte data = dbg_read();
     csum += data;
@@ -366,14 +372,6 @@ void cc_delay( unsigned char d ) {
   while( i-- );
 }
 
-inline void dbg_clock_high() {
-  FastGPIO::Pin<CC_DC>::setOutputValueHigh();
-}
-
-inline void dbg_clock_low() {
-  FastGPIO::Pin<CC_DC>::setOutputValueLow();
-}
-
 // 1 - activate RESET (low)
 // 0 - deactivate RESET (high)
 void dbg_reset(unsigned char state) {
@@ -387,45 +385,28 @@ void dbg_reset(unsigned char state) {
 
 void dbg_enter() {
   dbg_reset(1);
-  dbg_clock_high();
-  cc_delay(1);
-  dbg_clock_low();
-  cc_delay(1);
-  dbg_clock_high();
-  cc_delay(1);
-  dbg_clock_low();
+  SPI.transfer(0x00);
   cc_delay(200);
   dbg_reset(0);
 }
 
+void dbg_setread() {
+  DDRB &= ~_BV(PORTB3);
+  PORTB &= ~_BV(PORTB3);
+  SPCR |= _BV(CPHA);
+}
+
+void dbg_setwrite() {
+  DDRB |= _BV(PORTB3);
+  SPCR &= ~_BV(CPHA);
+}
+
 byte dbg_read() {
-  byte cnt, data;
-  FastGPIO::Pin<CC_DD>::setInput();
-  for (cnt = 8; cnt; cnt--) {
-    dbg_clock_high();
-    data <<= 1;
-    asm("nop \n");
-    if (FastGPIO::Pin<CC_DD>::isInputHigh())
-      data |= 0x01;
-    dbg_clock_low();
-  }
-  FastGPIO::Pin<CC_DD>::setOutputLow();
-  return data;
+  return SPI.transfer(0x00);
 }
 
 void dbg_write(byte data) {
-  byte cnt;
-  FastGPIO::Pin<CC_DD>::setOutputLow();
-  for (cnt = 8; cnt; cnt--) {
-    if (data & 0x80)
-      FastGPIO::Pin<CC_DD>::setOutputValueHigh();
-    else
-      FastGPIO::Pin<CC_DD>::setOutputValueLow();
-    dbg_clock_high();
-    data <<= 1;
-    dbg_clock_low();
-  }
-  FastGPIO::Pin<CC_DD>::setOutputValueLow();
+  SPI.transfer(data);
 }
 
 void printHex(unsigned char data) {
@@ -441,26 +422,32 @@ void printHexln(unsigned char data) {
 }
 
 byte dbg_instr(byte in0, byte in1, byte in2) {
+  dbg_setwrite();
   dbg_write(0x57);
   dbg_write(in0);
   dbg_write(in1);
   dbg_write(in2);
   //cc_delay(6);
+  dbg_setread();
   return dbg_read();
 }
 
 byte dbg_instr(byte in0, byte in1) {
+  dbg_setwrite();
   dbg_write(0x56);
   dbg_write(in0);
   dbg_write(in1);
   //cc_delay(6);
+  dbg_setread();
   return dbg_read();
 }
 
 byte dbg_instr(byte in0) {
+  dbg_setwrite();
   dbg_write(0x55);
   dbg_write(in0);
   //cc_delay(6);
+  dbg_setread();
   return dbg_read();
 }
 
