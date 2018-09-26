@@ -5,18 +5,9 @@ and
 http://akb77.com/g/rf/program-cc-debugger-cc2511-with-arduino/
 for details
 
-1. Upload CC_Flash.ino or CC_Flash_SPI.ino(experimental) sketch to Arduino
-2. Connect
-    Target          Arduino
-        DC (P2.1) - pin 5
-        DD (P2.2) - pin 6
-        RST       - pin 7
-        GND       - GND
-   
-   Connect (for CC_Flash_SPI.ino variant) 
-    Target
-        DC (P2.1) - pin 13 (SCK)
-        DD (P2.2) - pin 12,11 (MOSI, MISO)
-        RST       - pin 7
-        GND       - GND
-3. Start program CC.Flash.exe (need .NET 2.0)
+****Experimental branch.****
+
+For it to work with 2000000 baud rate.
+Change SERIAL_RX_BUFFER_SIZE from 64 to 256
+In HardwareSerial.h (found inside the arduino core)
+

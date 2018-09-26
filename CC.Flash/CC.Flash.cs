@@ -19,8 +19,10 @@ namespace CC.Flash
 {
 	public partial class CCFlash : Form
 	{
-		#region Variables 
-		const byte SEL_FLASH_INFO = 0x01;
+        #region Variables 
+        const int PACKET_SIZE = 64 * 3;
+
+        const byte SEL_FLASH_INFO = 0x01;
 
 		const byte CHIP_ERASE_DONE = 0x80;
 		const byte PCON_IDLE = 0x40;
@@ -172,9 +174,9 @@ namespace CC.Flash
 				foreach (byte c in cmd)
 					csum += c;
 				csum = (byte)(0 - (~csum));
-				cmd += string.Format("{0:X2}", csum);
+				cmd += (char)csum;
 			}
-			return (cmd + "\r");
+			return ((char)(byte)cmd.Length + cmd);
 		}
 		#endregion
 
@@ -185,6 +187,9 @@ namespace CC.Flash
 				return null;
 
 			string response = string.Empty;
+            string cmdresp = string.Empty;
+            byte respLen = 0;
+            bool first = true;
 			const int retryMax = 1000;
 			int retry = retryMax;
 
@@ -196,8 +201,13 @@ namespace CC.Flash
 				port.ReadChar();
 
 			command = prepareCommand(command);
-            port.Write(command);
-
+            byte[] cmdb = Encoding.Unicode.GetBytes(command);
+            byte[] commandb = new byte[cmdb.Length / 2];
+            for (int i = 0; i < cmdb.Length; i += 2)
+                commandb[i / 2] = cmdb[i];
+            port.Write(commandb, 0, commandb.Length);
+            //respLen = (byte)command.Length;
+            
             int retryCmd = 10;
             while (--retry > 0)
             {
@@ -208,7 +218,7 @@ namespace CC.Flash
                 {
                     Application.DoEvents();
                     Thread.Sleep(1);
-                    if (command == "\r" && retryCmd-- == 0)
+                    if (command == "\0" && retryCmd-- == 0)
                     {
                         retryCmd = 10;
                         port.Write(command);
@@ -217,18 +227,42 @@ namespace CC.Flash
                 }
                 else
 				{
-					++retry;
-					response += (char)port.ReadChar();
-					if (response.EndsWith("\r\n:"))
-					{
-						statusLine.Text = "";
-						waiting = false;
-						return response;
-					}
+                    if (first)
+                    {
+                        /*if ((respLen > 0) && (respLen != 0xFF))
+                        {
+                            cmdresp += (char)port.ReadByte();
+                            respLen--;
+                        }
+                        else
+                        {
+                            if (cmdresp != command)
+                                first = first;*/
+                            respLen = (byte)port.ReadByte();
+                            if (respLen != 0xFF)
+                            {
+                                response += (char)respLen;
+                                first = false;
+                            }
+                        //}
+                    }
+                    else
+                    {
+                        ++retry;
+                        response += (char)port.ReadByte();
+                        if (response.Length == (respLen + 1))
+                        {
+                            statusLine.Text = "";
+                            waiting = false;
+                            char[] resp = response.ToCharArray();
+                            return response;
+                        }
+                    }
 				}
 			}
 			if (waiting)
 			{
+                int a = cmdresp.Length;
 				statusLine.Text += " - Timeout";
 				waiting = false;
 			}
@@ -239,7 +273,7 @@ namespace CC.Flash
 		#region parseOK(string response) 
 		private bool parseOK(string response)
 		{
-			if (!string.IsNullOrEmpty(response) && response.EndsWith("\r\nOK\r\n:"))
+			if (!string.IsNullOrEmpty(response) && (response.IndexOf("O") > 0))
 				return true;
 			return false;
 		}
@@ -248,19 +282,18 @@ namespace CC.Flash
 		#region getTokenREAD(string response) 
 		private string getTokenREAD(string response)
 		{
-			return getToken("READ:", response);
+			return getToken("RD", response);
 		}
 		#endregion
 
 		#region getToken(string token, string response) 
 		private string getToken(string token, string response)
 		{
-			foreach (string s in response.Split(DELIM_CRLF, StringSplitOptions.RemoveEmptyEntries))
-			{
-				if (s.StartsWith(token))
-					return s.Substring(token.Length);
-			}
-			return null;
+            int found = response.IndexOf(token);
+            if (found == 3)
+                response.Remove(0, 1);
+            int tokenLen = response.ToCharArray()[0] - (found + 1);
+            return response.Substring(found + 2, tokenLen);
 		}
 		#endregion
 
@@ -273,15 +306,8 @@ namespace CC.Flash
 
 		private bool getDataByte(int index, string data, out byte value)
 		{
-			value = 0;
-			if (string.IsNullOrEmpty(data))
-				return false;
-			if (index * 2 + 2 >= data.Length)
-				return false;
-			data = data.Substring(index * 2, 2);
-			if (byte.TryParse(data, NumberStyles.HexNumber, null, out value))
-				return true;
-			return false;
+            value = (byte)data.ToCharArray()[index];
+			return true;
 		}
 		#endregion
 
@@ -398,14 +424,14 @@ namespace CC.Flash
 			if (!DEBUG_INIT())
 				return false;
 
-			string response = sendCommand("XW134R1", "Sending GET_STATUS ...");
+			string response = sendCommand("XW" + (char)1 + (char)0x34 + "R" + (char)1, "Sending GET_STATUS ...");
 			if (parseOK(response))
 			{
-				if (getDataByte(0, getTokenREAD(response), out status))
-				{
-					statusLine.Text = "";
-					return true;
-				}
+                if (getDataByte(0, getTokenREAD(response), out status))
+                {
+                    statusLine.Text = "";
+                    return true;
+                }
 			}
 			statusLine.Text = "GET_STATUS error:" + response;
 			return false;
@@ -423,7 +449,7 @@ namespace CC.Flash
 			if (!DEBUG_INIT())
 				return false;
 
-			string response = sendCommand("R" + (state ? "1" : "0"), "Sending RESET ...");
+			string response = sendCommand("R" + (char)(state ? 1 : 0), "Sending RESET ...");
 			if (parseOK(response))
 			{
 				statusLine.Text = "";
@@ -445,13 +471,13 @@ namespace CC.Flash
 			if (!DEBUG_INIT())
 				return false;
 
-			string response = sendCommand("L" + (state ? "1" : "0"), "Sending LED ...");
+			string response = sendCommand("L" + (char)(state ? 1 : 0), "Sending LED ...");
 			if (parseOK(response))
 			{
 				statusLine.Text = "";
 				return true;
 			}
-			statusLine.Text = "LED error:" + response.Replace("\r\n", " ").TrimEnd(new char[1] {':'});
+			statusLine.Text = "LED error:" + response;
 			return false;
 		}
 		#endregion
@@ -464,7 +490,7 @@ namespace CC.Flash
 		/// <returns></returns>
 		private bool FLASHDC(bool state)
 		{
-			string response = sendCommand("L" + (state ? "3" : "4"), "Sending Flash DC ...");
+			string response = sendCommand("L" + (char)(state ? 3 : 4), "Sending Flash DC ...");
 			if (parseOK(response))
 			{
 				statusLine.Text = "";
@@ -483,7 +509,7 @@ namespace CC.Flash
 		/// <returns></returns>
 		private bool FLASHDD(bool state)
 		{
-			string response = sendCommand("L" + (state ? "5" : "6"), "Sending Flash DD ...");
+			string response = sendCommand("L" + (char)(state ? 5 : 6), "Sending Flash DD ...");
 			if (parseOK(response))
 			{
 				statusLine.Text = "";
@@ -502,7 +528,7 @@ namespace CC.Flash
 		/// <returns></returns>
 		private bool FLASHRST(bool state)
 		{
-			string response = sendCommand("L" + (state ? "7" : "8"), "Sending Flash RST ...");
+			string response = sendCommand("L" + (char)(state ? 7 : 8), "Sending Flash RST ...");
 			if (parseOK(response))
 			{
 				statusLine.Text = "";
@@ -527,7 +553,7 @@ namespace CC.Flash
 			if (!DEBUG_INIT())
 				return false;
 
-			string response = sendCommand("XW124R1", "Sending RD_CONFIG ...");
+			string response = sendCommand("XW" + (char)1 + (char)0x24 + "R" + (char)1, "Sending RD_CONFIG ...");
 			if (parseOK(response))
 			{
 				if (getDataByte(0, getTokenREAD(response), out config))
@@ -548,7 +574,7 @@ namespace CC.Flash
 			if (!DEBUG_INIT())
 				return false;
 
-			string response = sendCommand("XW21D" + config.ToString("X2") + "R1", "Sending WR_CONFIG ...");
+			string response = sendCommand("XW" + (char)2 + (char)0x1D + (char)config + "R" + (char)1, "Sending WR_CONFIG ...");
 			if (parseOK(response))
 			{
 				statusLine.Text = "";
@@ -573,68 +599,68 @@ namespace CC.Flash
 			if (!DEBUG_INIT())
 				return false;
 
-			string response = sendCommand("XW168R2", "Sending GET_CHIP_ID ...");
+			string response = sendCommand("XW" + (char)1 + (char)0x68 + "R" + (char)2, "Sending GET_CHIP_ID ...");
 			if (parseOK(response))
 			{
 				string readData = getTokenREAD(response);
-				if (getDataByte(0, readData, out id) && getDataByte(1, readData, out revision))
+                id = (byte)readData.ToCharArray()[0];
+                revision = (byte)readData.ToCharArray()[1];
+                if (id == 0 || id == 0xFF)
 				{
-					if (id == 0 || id == 0xFF)
-					{
-						statusLine.Text = "GET_CHIP_ID error: Bad value " + id.ToString("X2");
-						return false;
-					}
-
-					labelChipID.Text = id.ToString("X2");
-					labelChipSeries.ForeColor = Color.FromKnownColor(KnownColor.ControlText);
-					labelRevision.Text = revision.ToString("X2");
-
-					chipDefined = true;
-
-					switch (id)
-					{
-						case 0x91:
-							labelChipSeries.Text = "CC2511";
-							loadChipModel("CC2511F32;CC2511F16;CC2511F08");
-							chipModel.Enabled = true;
-							break;
-						case 0x81:
-							labelChipSeries.Text = "CC2510";
-							loadChipModel("CC2510F32;CC2510F16;CC2510F08");
-							chipModel.Enabled = true;
-							break;
-						case 0x89:
-							labelChipSeries.Text = "CC2431";
-							loadChipModel("CC2431F128;CC2431F64;CC2431F32");
-							chipModel.Enabled = true;
-							break;
-						case 0x85:
-							labelChipSeries.Text = "CC2430";
-							loadChipModel("CC2430F128;CC2430F64;CC2430F32");
-							chipModel.Enabled = true;
-							break;
-						case 0x01:
-							labelChipSeries.Text = "CC1110";
-							loadChipModel("CC1110F32;CC1110F16;CC1110F08");
-							chipModel.Enabled = true;
-							break;
-						default:
-							chipDefined = false;
-							labelChipSeries.Text = "UNKNOWN";
-							labelChipSeries.ForeColor = Color.Red;
-							statusLine.Text = "GET_CHIP_ID error: Unknown CHIP ID " + id.ToString("X2");
-							return false;
-					}
-					if (chipDefined)
-					{
-						if (READ_STATUS())
-						{
-							statusLine.Text = "";
-							return true;
-						}
-						return false;
-					}
+					statusLine.Text = "GET_CHIP_ID error: Bad value " + id.ToString("X2");
+					return false;
 				}
+
+				labelChipID.Text = id.ToString("X2");
+				labelChipSeries.ForeColor = Color.FromKnownColor(KnownColor.ControlText);
+				labelRevision.Text = revision.ToString("X2");
+
+				chipDefined = true;
+
+				switch (id)
+				{
+					case 0x91:
+						labelChipSeries.Text = "CC2511";
+						loadChipModel("CC2511F32;CC2511F16;CC2511F08");
+						chipModel.Enabled = true;
+						break;
+					case 0x81:
+						labelChipSeries.Text = "CC2510";
+						loadChipModel("CC2510F32;CC2510F16;CC2510F08");
+						chipModel.Enabled = true;
+						break;
+					case 0x89:
+						labelChipSeries.Text = "CC2431";
+						loadChipModel("CC2431F128;CC2431F64;CC2431F32");
+						chipModel.Enabled = true;
+						break;
+					case 0x85:
+						labelChipSeries.Text = "CC2430";
+						loadChipModel("CC2430F128;CC2430F64;CC2430F32");
+						chipModel.Enabled = true;
+						break;
+					case 0x01:
+						labelChipSeries.Text = "CC1110";
+						loadChipModel("CC1110F32;CC1110F16;CC1110F08");
+						chipModel.Enabled = true;
+						break;
+					default:
+						chipDefined = false;
+						labelChipSeries.Text = "UNKNOWN";
+						labelChipSeries.ForeColor = Color.Red;
+						statusLine.Text = "GET_CHIP_ID error: Unknown CHIP ID " + id.ToString("X2");
+						return false;
+				}
+				if (chipDefined)
+				{
+					if (READ_STATUS() && READ_CONFIG())
+					{
+						statusLine.Text = "";
+						return true;
+					}
+					return false;
+				}
+				
 			}
 			statusLine.Text = "GET_CHIP_ID error:" + response;
 			return false;
@@ -646,7 +672,7 @@ namespace CC.Flash
 		{
 			if (!DEBUG_INIT())
 				return false;
-			string response = sendCommand("XW144R1", "Sending HALT ...");
+			string response = sendCommand("XW" + (char)1 + (char)0x44 + "R" + (char)1, "Sending HALT ...");
 			if (parseOK(response))
 			{
 				statusLine.Text = "";
@@ -662,7 +688,7 @@ namespace CC.Flash
 		{
 			if (!DEBUG_INIT())
 				return false;
-			string response = sendCommand("XW14CR1", "Sending RESUME ...");
+			string response = sendCommand("XW" + (char)1 + (char)0x4C + "R" + (char)1, "Sending RESUME ...");
 			if (parseOK(response))
 			{
 				statusLine.Text = "";
@@ -678,7 +704,7 @@ namespace CC.Flash
 		{
 			bool result = true;
 			result = result ? DEBUG_INIT() : false;
-			result = result ? DEBUG_INSTR(0x00) : false;
+			result = result ? DEBUG_INSTR(0x00) : false; // NOP
 			result = result ? CHIP_ERASE() : false;
 			int retry = 10;
 			byte status;
@@ -698,7 +724,7 @@ namespace CC.Flash
 		#region CHIP_ERASE() 
 		private bool CHIP_ERASE()
 		{
-			string response = sendCommand("XW114R1", "Sending CHIP_ERASE ...");
+			string response = sendCommand("XW" + (char)1 + (char)0x14 + "R" + (char)1, "Sending CHIP_ERASE ...");
 			if (parseOK(response))
 				return true;
 			statusLine.Text = "CHIP_ERASE error:" + response;
@@ -755,8 +781,8 @@ namespace CC.Flash
 
 			string cmd = string.Empty;
 			for (int i = 0; i < cmds.Length; ++i)
-				cmd += cmds[i].ToString("X2");
-			cmd = "XW" + string.Format("{0}{1:X2}", 1 + cmds.Length, 0x54 + cmds.Length) + cmd + "R1";
+				cmd += (char)cmds[i];
+			cmd = "XW" + (char)(1 + cmds.Length) + (char)(0x54 + cmds.Length) + cmd + "R" + (char)1;
 			string response = sendCommand(cmd, "Sending DEBUG_INSTR ...");
 			if (parseOK(response))
 			{
@@ -774,13 +800,13 @@ namespace CC.Flash
 		#region CLOCK_INIT() 
 		private bool CLOCK_INIT()
 		{
-			if (DEBUG_INSTR(0x75, 0xC6, 0x00))					//MOV CLKCON, 0x00
+			if (DEBUG_INSTR(0x75, 0xC6, 0x00)) //MOV CLKCON, #0x00
 			{
 				int retry = 5;
 				byte sleepReg;
 				while (retry-- > 0)
 				{
-					if (!dbg_DebugInstr(0xE5, 0xBE, out sleepReg))	//MOV A, SLEEP; (sleepReg = A)
+					if (!dbg_DebugInstr(0xE5, 0xBE, out sleepReg)) //MOV A, SLEEP; (sleepReg = A)
 						return false;
 					if ((sleepReg & 0x40) == 0x40)
 						return true;
@@ -794,9 +820,9 @@ namespace CC.Flash
 		#region WRITE_XDATA_MEMORY(int address, byte[] buffer, int length) 
 		private bool WRITE_XDATA_MEMORY(int address, byte[] buffer)
 		{
-			const int PACKET_SIZE = 64;
+            //const int PACKET_SIZE = 64;
 
-			if (!DEBUG_INIT())
+            if (!DEBUG_INIT())
 				return false;
 
 			int i = 0;
@@ -805,11 +831,11 @@ namespace CC.Flash
 			while (length > 0)
 			{
 				int sentBytes = length > PACKET_SIZE ? PACKET_SIZE : length;
-				string response = string.Format("MW{0:X4}{1:X2}", address, sentBytes);
+				string response = "MW" + (char)((address >> 8) & 0xFF) + (char)(address & 0xFF) + (char)sentBytes;
 				nextAddress += sentBytes;
 				length -= sentBytes;
 				while (sentBytes-- > 0)
-					response += ((byte)(buffer[i++])).ToString("X2");
+					response += (char)(buffer[i++]);
 
 				response = sendCommand(response, string.Format("Sending WRITE_XDATA ({0:X4}) ...", address));
 				address = nextAddress;
@@ -818,11 +844,9 @@ namespace CC.Flash
 				else
 				{
 					statusLine.Text = "WRITE_XDATA error:" + response;
-					LED(false);
 					return false;
 				}
 			}
-			LED(false);
 			return true;
 		}
 		#endregion
@@ -830,7 +854,7 @@ namespace CC.Flash
 		#region READ_XDATA_MEMORY(int address, byte[] buffer, int length) 
 		private bool READ_XDATA_MEMORY(int address, int length, out byte[] buffer)
 		{
-			const int PACKET_SIZE = 64;
+			//const int PACKET_SIZE = 64;
 			buffer = null;
 			if (!DEBUG_INIT())
 				return false;
@@ -843,7 +867,7 @@ namespace CC.Flash
 			while (length > 0)
 			{
 				int sentBytes = length > PACKET_SIZE ? PACKET_SIZE : length;
-				string response = string.Format("MR{0:X4}{1:X2}", address, sentBytes);
+				string response = "MR" + (char)((address >> 8) & 0xFF) + (char)(address & 0xFF) + (char)sentBytes;
 				nextAddress += sentBytes;
 				length -= sentBytes;
 				response = sendCommand(response, string.Format("Sending READ_XDATA ({0:X4}, {1}) ...", address, sentBytes));
@@ -857,33 +881,31 @@ namespace CC.Flash
 							buffer[i++] = data;
 						else
 						{
-							statusLine.Text = "READ_XDATA error: Not a hex " + response.Substring(j * 2, 2);
-							LED(false);
+							statusLine.Text = "READ_XDATA error: Not a hex " + response.Substring(j, 1);
 							return false;
 						}
 				}
 				else
 				{
 					statusLine.Text = "READ_XDATA error:" + response;
-					LED(false);
 					return false;
 				}
 			}
-			LED(false);
 			return true;
 		}
 		#endregion
 
 		#region READ_CODE_MEMORY(int address, byte bank, int length, out byte[] code) 
-		private bool READ_CODE_MEMORY(int address, byte bank, int length, out byte[] buffer)
+		private bool READ_CODE_MEMORY(int address, byte bank, int length, bool useBanks, out byte[] buffer)
 		{
-			const int PACKET_SIZE = 64;
+			//const int PACKET_SIZE = 64;
 			buffer = null;
 			if (!DEBUG_INIT())
 				return false;
 
 			int i = 0;
-            address = 0x8000 + (address % 0x8000);
+            if (useBanks)
+                address = 0x8000 + (address % 0x8000);
 
             int nextAddress = address;
 			buffer = new byte[length];
@@ -894,7 +916,7 @@ namespace CC.Flash
 			while(length > 0)
 			{
 				int sentBytes = length > PACKET_SIZE ? PACKET_SIZE : length;
-				string response = string.Format("MC{0:X4}{1:X2}", address, sentBytes);
+				string response = "MC" + (char)((address >> 8) & 0xFF) + (char)(address & 0xFF) + (char)sentBytes;
 				nextAddress += sentBytes;
 				length -= sentBytes;
 				response = sendCommand(response, string.Format("Sending READ_CODE ({0:X4}, {1}) ...", address, sentBytes));
@@ -908,19 +930,16 @@ namespace CC.Flash
 							buffer[i++] = data;
 						else
 						{
-							statusLine.Text = "READ_CODE error: Not a hex " + response.Substring(j * 2, 2);
-							LED(false);
+							statusLine.Text = "READ_CODE error: Not a hex " + response.Substring(j, 1);
 							return false;
 						}
 				}
 				else
 				{
 					statusLine.Text = "READ_XDATA error:" + response;
-					LED(false);
 					return false;
 				}
 			}
-			LED(false);
 			return true;
 		}
 		#endregion
@@ -930,7 +949,7 @@ namespace CC.Flash
 		{
 			if (!DEBUG_INIT())
 				return false;
-			return DEBUG_INSTR(0x02, (byte)((address >> 8) & 0xFF), (byte)(address & 0xFF));		//LJMP iAddr
+			return DEBUG_INSTR(0x02, (byte)((address >> 8) & 0xFF), (byte)(address & 0xFF)); //LJMP addr16
 		}
 		#endregion
 
@@ -940,7 +959,7 @@ namespace CC.Flash
 			address = 0;
 			if (!DEBUG_INIT())
 				return false;
-			string response = sendCommand("XW128R2", "Sending GET_PC ...");
+			string response = sendCommand("XW" + (char)1 + (char)0x28 + "R" + (char)2, "Sending GET_PC ...");
 			if (parseOK(response))
 			{
 				response = getTokenREAD(response);
@@ -965,32 +984,32 @@ namespace CC.Flash
 			bool valid = true;
 
 			List<byte> routine = new List<byte>(1024);
-			addRoutine(routine, 0x75, 0xAD, (byte)(((iPageAddress >> 8) / FLASH_WORD_SIZE) & 0x7E));
-			addRoutine(routine, 0x75, 0xAC, 0x00);
-			if (erasePage)
+			addRoutine(routine, 0x75, 0xAD, (byte)(((iPageAddress >> 8) / FLASH_WORD_SIZE) & 0x7E)); //MOV FADDRH, #ADDR
+            addRoutine(routine, 0x75, 0xAC, 0x00); //MOV FADDRL, #0x00
+            if (erasePage)
 			{
-				addRoutine(routine, 0x75, 0xAE, 0x01);
-				addRoutine(routine, 0xE5, 0xAE);
-				addRoutine(routine, 0x20, 0xE7, 0xFB);
-			}
-			addRoutine(routine, 0x90, 0xF0, 0x00);
-			addRoutine(routine, 0x7F, (byte)(((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) >> 8) & 0xFF));
-			addRoutine(routine, 0x7E, (byte)((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) & 0xFF));
-			addRoutine(routine, 0x75, 0xAE, 0x02);
-			addRoutine(routine, 0x7D, (byte)FLASH_WORD_SIZE);
-			addRoutine(routine, 0xE0);
-			addRoutine(routine, 0xA3);
-			addRoutine(routine, 0xF5, 0xAF);
-			addRoutine(routine, 0xDD, 0xFA);
-			addRoutine(routine, 0xE5, 0xAE);
-			addRoutine(routine, 0x20, 0xE6, 0xFB);
-			addRoutine(routine, 0xDE, 0xF1);
-			addRoutine(routine, 0xDF, 0xEF);
-			addRoutine(routine, 0xA5);
+				addRoutine(routine, 0x75, 0xAE, 0x01); //MOV FCTL, #0x01 (ERASE)
+                addRoutine(routine, 0xE5, 0xAE); //MOV A, FCTL
+                addRoutine(routine, 0x20, 0xE7, 0xFB); //JB bit 0xE7 on A, jump+0xFB **jump if bit is set
+            }
+			addRoutine(routine, 0x90, 0xF0, 0x00); //MOV DPTR, #0xF000
+            addRoutine(routine, 0x7F, (byte)(((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) >> 8) & 0xFF)); //MOV R7, #SIZEH
+            addRoutine(routine, 0x7E, (byte)((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) & 0xFF)); //MOV R6, #SIZEL
+			addRoutine(routine, 0x75, 0xAE, 0x02); //MOV FCTL, #0x02 (WRITE)
+            addRoutine(routine, 0x7D, (byte)FLASH_WORD_SIZE); //MOV R5, #FLASH_WORD_SIZE
+            addRoutine(routine, 0xE0); //MOVX A, @DPTR
+            addRoutine(routine, 0xA3); //INC DPTR
+            addRoutine(routine, 0xF5, 0xAF); //MOV FWDATA, A
+            addRoutine(routine, 0xDD, 0xFA); //DJNZ R5, jump+0xFA **DJNZ Decrease, jump if not zero
+            addRoutine(routine, 0xE5, 0xAE); //MOV A, FCTL
+            addRoutine(routine, 0x20, 0xE6, 0xFB); //JB bit 0xE6 on A, jump+0xFB
+            addRoutine(routine, 0xDE, 0xF1); //DJNZ R6, jump+0xF1
+            addRoutine(routine, 0xDF, 0xEF); //DJNZ R7, jump+0xEF
+            addRoutine(routine, 0xA5); 
 			valid = valid ? WRITE_XDATA_MEMORY(0xF000, buffer) : false;
 			valid = valid ? WRITE_XDATA_MEMORY(0xF000 + FLASH_PAGE_SIZE, routine.ToArray()) : false;
-			valid = valid ? DEBUG_INSTR(0x75, 0xC7, 0x51) : false;
-			valid = valid ? SET_PC(0xF000 + FLASH_PAGE_SIZE) : false;
+			valid = valid ? DEBUG_INSTR(0x75, 0xC7, 0x51) : false; //MOV MEMCTR, #0x51
+            valid = valid ? SET_PC(0xF000 + FLASH_PAGE_SIZE) : false;
 			valid = valid ? RESUME() : false;
 			if (valid)
 			{
@@ -1011,7 +1030,7 @@ namespace CC.Flash
 		#region READ_FLASH_PAGE(long iPageAddress, int length, out byte[] code) 
 		private bool READ_FLASH_PAGE(long iPageAddress, int length, out byte[] code)
 		{
-			return READ_CODE_MEMORY((int)(iPageAddress & 0x7FFFF), (byte)((iPageAddress >> 15) & 0x03), length, out code);
+			return READ_CODE_MEMORY((int)(iPageAddress & 0x7FFFF), (byte)((iPageAddress >> 15) & 0x03), length, true, out code);
 		}
 		#endregion
 
@@ -1342,6 +1361,7 @@ namespace CC.Flash
 				try
 				{
 					groupAllControls.Enabled = false;
+                    baudRates.Enabled = false;
 
                     FileInfo fi = new FileInfo(filename.Text);
 
@@ -1443,6 +1463,7 @@ namespace CC.Flash
                         
 					progressBar.Value = progressBar.Minimum;
 					groupAllControls.Enabled = true;
+                    baudRates.Enabled = true;
                     time.Stop();
                     if (noError)
                         statusLine.Text = "Wrote Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
@@ -1466,9 +1487,11 @@ namespace CC.Flash
 			}
 			FileStream fs = null;
             Stopwatch time = null;
+            bool noError = true;
             try
 			{
 				groupAllControls.Enabled = false;
+                baudRates.Enabled = false;
 				fs = new FileStream(filename.Text, FileMode.Create, FileAccess.Write, FileShare.Write, FLASH_PAGE_SIZE);
 				bool valid = true;
 				valid = valid ? DEBUG_INIT(false) : false;
@@ -1495,9 +1518,11 @@ namespace CC.Flash
 						fs.Write(buffer, 0, buffer.Length);
 					pageAddress += FLASH_PAGE_SIZE;
 				}
-			}
+                noError = valid;
+            }
 			catch (Exception ex)
 			{
+                noError = false;
 				MessageBox.Show("Error: " + ex.Message);
 			}
 			finally
@@ -1507,8 +1532,10 @@ namespace CC.Flash
 				DEBUG_INIT(false);
 				progressBar.Value = progressBar.Minimum;
 				groupAllControls.Enabled = true;
+                baudRates.Enabled = true;
                 time.Stop();
-                statusLine.Text = "Read Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
+                if (noError)
+                    statusLine.Text = "Read Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
             }
 		}
 		#endregion
@@ -1524,7 +1551,8 @@ namespace CC.Flash
 		private void btnGetStatus_Click(object sender, EventArgs e)
 		{
 			READ_STATUS();
-		}
+            READ_CONFIG();
+        }
 		#endregion
 
 		#region btnCheckCC_Click(object sender, EventArgs e) 
@@ -1540,16 +1568,17 @@ namespace CC.Flash
 			valid &= parseHexByte(PxBITS, out pxbits, 0, false, valid);
 			valid &= parseHexByte(Px, out px, 0, false, valid);
 			valid &= parseHexByte(PxDIR, out pxdir, 0, false, valid);
-			valid = valid ? DEBUG_INSTR(0x53, pxsel, (byte)(~pxselbits)) : false;
-			valid = valid ? DEBUG_INSTR(0x53, px, (byte)(~pxbits)) : false;
-			valid = valid ? DEBUG_INSTR(0x43, pxdir, pxbits) : false;
+			valid = valid ? DEBUG_INSTR(0x53, pxsel, (byte)(~pxselbits)) : false; //ANL pxsel, #pxselbits
+            valid = valid ? DEBUG_INSTR(0x53, px, (byte)(~pxbits)) : false; //ANL px, #pxbits
+            valid = valid ? DEBUG_INSTR(0x43, pxdir, pxbits) : false; //ORL pxdir, #pxbits
 
-			for (int i = 0; i < 10; i++)
+
+            for (int i = 0; i < 10; i++)
 			{
 				if (!valid)
 					break;
-				valid = valid ? DEBUG_INSTR(0x63, px, pxbits) : false;
-				Thread.Sleep(500);
+				valid = valid ? DEBUG_INSTR(0x63, px, pxbits) : false; //XRL px, #pxbits
+                Thread.Sleep(500);
 			}
 
 			DEBUG_INIT(false);
@@ -1562,7 +1591,12 @@ namespace CC.Flash
             if (MessageBox.Show("Are you sure?\nAll data in Flash will be lost.", "CHIP_ERASE", MessageBoxButtons.OKCancel) == DialogResult.OK)
             {
                 if (MASS_ERASE_FLASH())
+                {
+                    DEBUG_INSTR(0);
+                    READ_STATUS();
+                    READ_CONFIG();
                     statusLine.Text = "Chip Erased";
+                }
                 else
                     statusLine.Text = "Error Erasing Chip";
             }
@@ -1616,11 +1650,11 @@ namespace CC.Flash
             if (port != null)
             {
                 int baud = int.Parse(baudRates.SelectedItem.ToString());
-                string response = sendCommand(string.Format("B{0:X6}", baud), "Changing Baud Rate to " + baud + "bps ...");
+                string response = sendCommand("B" + (char)((baud >> 16) & 0xFF) + (char)((baud >> 8) & 0xFF) + (char)(baud & 0xFF), "Changing Baud Rate to " + baud + "bps ...");
                 if (parseOK(response))
                 {
                     port.BaudRate = baud;
-                    response = sendCommand("T56", "Testing Baud Rate ...");
+                    response = sendCommand("T" + (char)0x56, "Testing Baud Rate ...");
                     if (parseOK(response))
                     {
                         statusLine.Text = "Changed Baud Rate to " + baud + "bps";
@@ -1635,5 +1669,75 @@ namespace CC.Flash
             }
         }
         #endregion
+
+        private void btnReadFlashInfo_Click(object sender, EventArgs e)
+        {
+            filename.Text = filename.Text.Trim();
+            if (filename.Text.Length == 0)
+            {
+                if (openFile.ShowDialog() == DialogResult.OK)
+                    filename.Text = openFile.FileName.Trim();
+                else
+                    return;
+            }
+            FileStream fs = null;
+            Stopwatch time = null;
+            bool noError = true;
+            try
+            {
+                groupAllControls.Enabled = false;
+                baudRates.Enabled = false;
+                fs = new FileStream(filename.Text, FileMode.Create, FileAccess.Write, FileShare.Write, FLASH_PAGE_SIZE);
+                bool valid = true;
+                valid = valid ? DEBUG_INIT(false) : false;
+                byte config = 0;
+                valid = valid ? WRITE_CONFIG(1) : false;
+                valid = valid ? dbg_ReadConfig(out config) : false;
+                if (valid && ((config & SEL_FLASH_INFO) == 0))
+                    statusLine.Text = "Error no SEL_FLASH_INFO bit set.";
+                valid = valid ? (config & SEL_FLASH_INFO) == SEL_FLASH_INFO : false;
+                byte status = 0xFF;
+                valid = valid ? READ_STATUS(out status) : false;
+                if (valid && ((status & DEBUG_LOCKED) == DEBUG_LOCKED))
+                    MessageBox.Show("Device is DEBUG_LOCKED\nMust run 'Chip Erase' to Access Flash.");
+                valid = valid ? !((status & DEBUG_LOCKED) == DEBUG_LOCKED) : false;
+                valid = valid ? CLOCK_INIT() : false;
+
+                progressBar.Minimum = 0;
+
+                progressBar.Maximum = (int)(1);
+                progressBar.Value = progressBar.Minimum;
+
+                time = Stopwatch.StartNew();
+                byte[] buffer = null;
+                if (valid)
+                {
+                    valid = valid ? READ_CODE_MEMORY(0, 0, FLASH_PAGE_SIZE, false, out buffer) : false;
+                    progressBar.Value++;
+                    if (valid)
+                        fs.Write(buffer, 0, buffer.Length);
+                }
+                WRITE_PAGE_FLASH(0, new byte[] { 1 }, false);
+
+                noError = valid;
+            }
+            catch (Exception ex)
+            {
+                noError = false;
+                MessageBox.Show("Error: " + ex.Message);
+            }
+            finally
+            {
+                if (fs != null)
+                    fs.Close();
+                DEBUG_INIT(false);
+                progressBar.Value = progressBar.Minimum;
+                groupAllControls.Enabled = true;
+                baudRates.Enabled = true;
+                time.Stop();
+                if (noError)
+                    statusLine.Text = "Read Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
+            }
+        }
     }
 }

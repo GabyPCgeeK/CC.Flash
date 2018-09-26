@@ -111,6 +111,7 @@
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             this.baudRates = new System.Windows.Forms.ComboBox();
             this.label19 = new System.Windows.Forms.Label();
+            this.btnReadFlashInfo = new System.Windows.Forms.Button();
             this.status.SuspendLayout();
             this.groupAllControls.SuspendLayout();
             this.groupBox5.SuspendLayout();
@@ -256,9 +257,9 @@
             this.cbVerifyAfterWrite.CheckState = System.Windows.Forms.CheckState.Checked;
             this.cbVerifyAfterWrite.Location = new System.Drawing.Point(256, 47);
             this.cbVerifyAfterWrite.Name = "cbVerifyAfterWrite";
-            this.cbVerifyAfterWrite.Size = new System.Drawing.Size(101, 17);
+            this.cbVerifyAfterWrite.Size = new System.Drawing.Size(105, 17);
             this.cbVerifyAfterWrite.TabIndex = 6;
-            this.cbVerifyAfterWrite.Text = "Verify after write";
+            this.cbVerifyAfterWrite.Text = "Verify After Write";
             this.cbVerifyAfterWrite.UseVisualStyleBackColor = true;
             // 
             // cbAutoConnect
@@ -395,6 +396,7 @@
             // 
             this.groupBox4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox4.Controls.Add(this.btnReadFlashInfo);
             this.groupBox4.Controls.Add(this.cbResumeAfterWrite);
             this.groupBox4.Controls.Add(this.filename);
             this.groupBox4.Controls.Add(this.btnRead);
@@ -483,9 +485,9 @@
             this.cbErasePage.CheckState = System.Windows.Forms.CheckState.Checked;
             this.cbErasePage.Location = new System.Drawing.Point(256, 68);
             this.cbErasePage.Name = "cbErasePage";
-            this.cbErasePage.Size = new System.Drawing.Size(80, 17);
+            this.cbErasePage.Size = new System.Drawing.Size(81, 17);
             this.cbErasePage.TabIndex = 7;
-            this.cbErasePage.Text = "Erase page";
+            this.cbErasePage.Text = "Erase Page";
             this.cbErasePage.UseVisualStyleBackColor = true;
             // 
             // groupBox3
@@ -978,6 +980,16 @@
             this.label19.TabIndex = 17;
             this.label19.Text = "Baud:";
             // 
+            // btnReadFlashInfo
+            // 
+            this.btnReadFlashInfo.Location = new System.Drawing.Point(6, 79);
+            this.btnReadFlashInfo.Name = "btnReadFlashInfo";
+            this.btnReadFlashInfo.Size = new System.Drawing.Size(62, 23);
+            this.btnReadFlashInfo.TabIndex = 58;
+            this.btnReadFlashInfo.Text = "Flash Info";
+            this.btnReadFlashInfo.UseVisualStyleBackColor = true;
+            this.btnReadFlashInfo.Click += new System.EventHandler(this.btnReadFlashInfo_Click);
+            // 
             // CCFlash
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1096,6 +1108,7 @@
         private System.Windows.Forms.CheckBox cbResumeAfterReset;
         private System.Windows.Forms.ComboBox baudRates;
         private System.Windows.Forms.Label label19;
+        private System.Windows.Forms.Button btnReadFlashInfo;
     }
 }
 

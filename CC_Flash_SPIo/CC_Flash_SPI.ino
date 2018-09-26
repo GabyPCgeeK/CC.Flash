@@ -8,14 +8,13 @@
 #define CC_DD             6
 #define CC_RST            7
 
-#define PACKET_SIZE       (64 * 3)
-#define BUFFER_SIZE       PACKET_SIZE + 9
+#define BUFFER_SIZE       140
 
 #define READ_TYPE_CODE    0
 #define READ_TYPE_XDATA   1
 
 byte inBuffer[BUFFER_SIZE];
-byte inDataLen = 0, totalLen = 0;
+byte inDataLen = 0;
 byte idx;
 
 void setup() {
@@ -33,6 +32,7 @@ void setup() {
 
   Serial.begin(115200);
   LED_OFF();
+  Serial.print("\r\n:");
 }
 
 void loop() {
@@ -40,46 +40,51 @@ void loop() {
     return;
 
   byte inByte = Serial.read();
-
-  if (totalLen == 0)
-    totalLen = inByte;
-  else
-    inBuffer[inDataLen++] = inByte;
-  //Serial.write(inByte);
-  if (inDataLen == totalLen) {
+  if (inByte == '\r') {
     process_cmd();
     inDataLen=0;
-    totalLen=0;
-  } else if (totalLen > BUFFER_SIZE) {
+  } else if (inDataLen >= BUFFER_SIZE) {
     do {
       inByte = Serial.read();
-    } while (inDataLen < totalLen);
-    Serial.write(0x03);
-    Serial.write('E');
-    Serial.print("BO");
+    } while (inByte != '\r');
+    Serial.println();
+    Serial.print("BUFFER OVERFLOW");
+    sendERROR();
     inDataLen=0;
-    totalLen=0;
-  }
+  } else {
+    inByte = toupper(inByte);
+    if (inByte < ' ') {
+      do {
+        inByte = Serial.read();
+      } while (inByte != '\r');
+      Serial.println();
+      Serial.print("BAD BYTE RECEIVED:");
+      Serial.print(inByte);
+      sendERROR();
+      inDataLen=0;
+    }
+    inBuffer[inDataLen++] = inByte;
+  }  
 }
 
 void process_cmd() {
+  Serial.println();
+  
   if (!inDataLen) {
-    Serial.write(0x01);
-    Serial.write('O');
+    sendOK();
     return;
   }
   
   byte csum = checkChecksum();
   if (csum) {
-    Serial.write(0x04);
-    Serial.write('E');
-    Serial.print("BS");
-    Serial.write(0 - csum);
+    Serial.print("BAD CHECKSUM:");
+    printHexln(0-csum);
+    sendERROR();
     return;
   }
   
   // Remove checksum from length
-  inDataLen -= 1;
+  inDataLen -= 2;
 
   switch(inBuffer[0]) {
     case 'D': CMD_ENTER_DEBUG();    break;
@@ -90,111 +95,106 @@ void process_cmd() {
     case 'B': CMD_BAUD();           break;
     case 'T': CMD_TEST();           break;
     default:
-      Serial.write(0x04);
-      Serial.write('E');
-      Serial.print("BC");
-      Serial.write(inBuffer[0]);
+      Serial.print("BAD COMMAND:");
+      Serial.println(inBuffer[0]);
+      sendERROR();
   }  
 }
 
 void CMD_TEST() {
-  if (inDataLen != 2) {
-    Serial.write(0x01);
-    Serial.write('E');
+  if (inDataLen != 3) {
+    sendERROR();
     return;
   }
-  if (inBuffer[1] == 0x56) {
-    Serial.write(0x04);
-    Serial.write('O');
-    Serial.write("RD");
-    Serial.write(PACKET_SIZE);
-    return;
-  }
+  if (isHexByte(1))
+    if (getHexByte(1) == 0x56) {
+      sendOK();
+      return;
+    }
 }
 void CMD_BAUD() {
-  if (inDataLen != 4) {
-    Serial.write(0x01);
-    Serial.write('E');
+  if (inDataLen != 7) {
+    sendERROR();
     return;
   }
-  
-  uint32_t b1 = inBuffer[1];
-  uint32_t b2 = inBuffer[2];
-  uint32_t b3 = inBuffer[3];
-  uint32_t baud = (b1 << 16) | (b2 << 8) | b3;
-
-  Serial.write(0x06);
-  Serial.write('O');
-  Serial.print("BR");
-  Serial.write((baud >> 16) & 0xFF);
-  Serial.write((baud >> 8) & 0xFF);
-  Serial.write(baud & 0xFF);
-  
-  Serial.end();
-  Serial.begin(baud);
-  return;
+  if (isHexByte(1) && isHexByte(3) && isHexByte(5)) {
+    uint32_t b1 = getHexByte(1);
+    uint32_t b2 = getHexByte(3);
+    uint32_t b3 = getHexByte(5);
+    uint32_t baud = (b1 << 16) | (b2 << 8) | b3;
+    
+    Serial.print("BAUD:");
+    printHex((baud >> 16) & 0xFF);
+    printHex((baud >> 8) & 0xFF);
+    printHexln(baud & 0xFF);
+    sendOK();
+    
+    Serial.end();
+    Serial.begin(baud);
+    return;
+  } else {
+    sendERROR();
+    return;
+  }
 }
 
 void CMD_ENTER_DEBUG() {
   if (inDataLen != 1) {
-    Serial.write(0x01);
-    Serial.write('E');
+    sendERROR();
     return;
   }
 
   dbg_enter();
   dbg_instr(0x00);
-  Serial.write(0x01);
-  Serial.write('O');
+  sendOK();
 }
 
 void CMD_LED() {
   if (inDataLen != 2) {
-    Serial.write(0x01);
-    Serial.write('E');
+    sendERROR();
     return;
   }
 
   switch (inBuffer[1]) {
-    case 0: LED_OFF();                                    break;
-    case 1: LED_ON();                                     break;
-    case 3: FastGPIO::Pin<CC_DC>::setOutputValueHigh();   break;
-    case 4: FastGPIO::Pin<CC_DC>::setOutputValueLow();    break;
-    case 5: FastGPIO::Pin<CC_DD>::setOutputValueHigh();   break;
-    case 6: FastGPIO::Pin<CC_DD>::setOutputValueLow();    break;
-    case 7: FastGPIO::Pin<CC_RST>::setOutputLow();        break;
-    case 8: FastGPIO::Pin<CC_RST>::setInputPulledUp();    break;
+    case '0': LED_OFF();                                    break;
+    case '1': LED_ON();                                     break;
+    case '3': FastGPIO::Pin<CC_DC>::setOutputValueHigh();   break;
+    case '4': FastGPIO::Pin<CC_DC>::setOutputValueLow();    break;
+    case '5': FastGPIO::Pin<CC_DD>::setOutputValueHigh();   break;
+    case '6': FastGPIO::Pin<CC_DD>::setOutputValueLow();    break;
+    case '7': FastGPIO::Pin<CC_RST>::setOutputLow();        break;
+    case '8': FastGPIO::Pin<CC_RST>::setInputPulledUp();    break;
   }
-  Serial.write(0x01);
-  Serial.write('O');
+  sendOK();
 }
 
 void CMD_RESET() {
   if (inDataLen != 2) {
-    Serial.write(0x01);
-    Serial.write('E');
+    sendERROR();
     return;
   }
   
   switch (inBuffer[1]) {
-    case 0: dbg_reset(0);   break;
-    case 1: dbg_reset(1);   break;
+    case '0': dbg_reset(0);   break;
+    case '1': dbg_reset(1);   break;
   }
-  Serial.write(0x01);
-  Serial.write('O');
+  sendOK();
 }
 
 void CMD_XDATA() {
-  byte cnt = inBuffer[4];
-  if (!cnt) {
-    Serial.write(0x01);
-    Serial.write('O');
+  if (inDataLen < 8 || !isHexByte(2) || !isHexByte(4) || !isHexByte(6)) {
+    sendERROR();
     return;
   }
-  if (cnt > PACKET_SIZE) {
-    Serial.write(0x03);
-    Serial.write('E');
-    Serial.print("OF");
+  
+  byte cnt = getHexByte(6);
+  if (!cnt) {
+    sendOK();
+    return;
+  }
+  if (cnt > 64) {
+    Serial.println("NO MORE THAN 64 BYTES");
+    sendERROR();
     return;
   }
   
@@ -204,126 +204,145 @@ void CMD_XDATA() {
     case 'R': CMD_XDATA_READ(cnt, READ_TYPE_XDATA);   break;
     case 'C': CMD_XDATA_READ(cnt, READ_TYPE_CODE);    break;
     default:
-      Serial.write(0x01);
-      Serial.write('E');
+      sendERROR();
   }
   LED_OFF();
 }
 
 void CMD_XDATA_WRITE(byte cnt) {
-  idx = 5;
-  if ((idx + cnt) > inDataLen) {
-    Serial.write(0x03);
-    Serial.write('E');
-    Serial.print("ND");
-    return;
-  }
-  dbg_instr(0x90, inBuffer[2], inBuffer[3]);      //MOV DPTR #high #low
+  idx = 8;
+  dbg_instr(0x90, getHexByte(2), getHexByte(4));      // MOV DPTR #high #low
   while (cnt-- > 0) {
-    dbg_instr(0x74, inBuffer[idx]);               //MOV A, #data
-    dbg_instr(0xF0);                              //MOVX @DPTR, A
-    dbg_instr(0xA3);                              //INC DPTR
-    idx++;
+    if (idx+1 >= inDataLen) {
+      Serial.println("NO DATA");
+      sendERROR();
+      return;
+    }
+    if (!isHexByte(idx)) {
+      Serial.println("NO HEX");
+      sendERROR();
+      return;
+    }
+    
+    dbg_instr(0x74, getHexByte(idx));
+    dbg_instr(0xF0);
+    dbg_instr(0xA3);
+    idx += 2;
   }
-  Serial.write(0x01);
-  Serial.write('O');
+  sendOK();
 }
 
 void CMD_XDATA_READ(byte cnt, byte type) {
   byte data, csum = 0;
-  dbg_instr(0x90, inBuffer[2], inBuffer[3]);      //MOV DPTR #high #low
-  Serial.write(0x03 + cnt + 1);
-  Serial.write('O');
-  Serial.print("RD");
+  dbg_instr(0x90, getHexByte(2), getHexByte(4));      // MOV DPTR #high #low
+  Serial.print("READ:");
   while (cnt-- > 0) {
     if (type == READ_TYPE_XDATA)
-      data = dbg_instr(0xE0);                     //MOVX A, @DPTR
+      data = dbg_instr(0xE0);
     else {
-      dbg_instr(0xE4);                            //CLR A
-      data = dbg_instr(0x93);                     //MOVC A, @A+DPTR
+      dbg_instr(0xE4);
+      data = dbg_instr(0x93);
     }
-    dbg_instr(0xA3);                              //INC DPTR
+    dbg_instr(0xA3);
     csum += data;
-    Serial.write(data);
+    printHex(data);
   }
   csum = (0 - (~csum));
-  Serial.write(csum);
+  printHexln(csum);
+  sendOK();
 }
 
 void CMD_EXTENDED() {
-  bool doRead = false;
   LED_ON();
   idx = 1;
-  Serial.write(0xFF);
   bool ok = true;
   while (ok && idx < inDataLen) {    
     switch (inBuffer[idx++]) {
       case 'W': ok = CMD_EXTENDED_WRITE();  break;
-      case 'R': ok = CMD_EXTENDED_READ(); doRead = true;  break;
+      case 'R': ok = CMD_EXTENDED_READ();   break;
       default:
         ok = false;
     }
   }
   LED_OFF();
   if (ok) {
-    if (!doRead) {
-      Serial.write(0x01);
-      Serial.write('O');
-    }
+    sendOK();    
   } else {
-    Serial.write(0x01);
-    Serial.write('E');
+    sendERROR();
   }
 }
 
 bool CMD_EXTENDED_WRITE() {
-  if (idx >= inDataLen)
+  if (idx >= inDataLen || !isdigit(inBuffer[idx]))
     return false;
     
-  byte cnt = inBuffer[idx++];
+  byte cnt = inBuffer[idx++] - '0';
   if (!cnt)
     return true;
   dbg_setwrite();
   while (cnt-- > 0) {
-    if (idx >= inDataLen)
+    if (idx+1 >= inDataLen || !isHexByte(idx))
       return false;
-    dbg_write(inBuffer[idx++]);
+    dbg_write(getHexByte(idx));
+    idx += 2;
   }
+  //cc_delay(10);
   return true;
 }
 
 bool CMD_EXTENDED_READ() {
-  if (idx >= inDataLen)
+  if (idx >= inDataLen || !isdigit(inBuffer[idx]))
     return false;
 
-  byte cnt = inBuffer[idx++];
+  Serial.print("READ:");
+  byte cnt = inBuffer[idx++] - '0';
   byte csum = 0;
-
-  Serial.write(0x03 + cnt + 1);
-  Serial.write('O');
-  Serial.print("RD");
   dbg_setread();
   while (cnt-- > 0) {
     byte data = dbg_read();
     csum += data;
-    Serial.write(data);
+    printHex(data);
   }
   csum = (0 - (~csum));
-  Serial.write(csum);
+  printHexln(csum);
   return true;
 }
 
+byte isHexDigit(unsigned char c) {
+  if (c >= '0' && c <= '9')
+    return 1;
+  else if (c >= 'A' && c <= 'F')
+    return 1;
+  return 0;
+}
+
+byte isHexByte(byte index) {
+  return isHexDigit(inBuffer[index]) & isHexDigit(inBuffer[index + 1]);
+}
+
+byte getHexDigit(unsigned char c) {
+  if (c >= '0' && c <= '9')
+    c -= '0';
+  else if (c >= 'A' && c <= 'F')
+    c -= ('A' - 10);
+  return c;
+}
+
+byte getHexByte(byte index) {
+  return ((getHexDigit(inBuffer[index]) << 4) | getHexDigit(inBuffer[index + 1]));
+}
+
 byte checkChecksum() {
-  if (inDataLen < 2)
+  if (inDataLen <= 2)
     return 0;
 
   byte csum = 0;
-  byte imax = inDataLen - 1;
+  byte imax = inDataLen - 2;
   byte i = 0;
   for(; i < imax; ++i)
     csum += inBuffer[i];
   csum = ~csum;
-  return (csum + inBuffer[i]);
+  return (csum + getHexByte(i));
 }
 
 void LED_OFF() {
@@ -390,6 +409,20 @@ void dbg_write(byte data) {
   SPI.transfer(data);
 }
 
+char nibbleToHex[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
+void printHex(unsigned char data) {
+  byte nibble1 = data >> 4;
+  Serial.write(nibbleToHex[nibble1]);
+  byte nibble2 = data & 0xF;
+  Serial.write(nibbleToHex[nibble2]);
+}
+
+void printHexln(unsigned char data) {
+  printHex(data);
+  Serial.println();
+}
+
 byte dbg_instr(byte in0, byte in1, byte in2) {
   dbg_setwrite();
   dbg_write(0x57);
@@ -418,4 +451,12 @@ byte dbg_instr(byte in0) {
   //cc_delay(6);
   dbg_setread();
   return dbg_read();
+}
+
+void sendERROR() {
+  Serial.print("ERROR\r\n:");
+}
+
+void sendOK() {
+  Serial.print("OK\r\n:");
 }
